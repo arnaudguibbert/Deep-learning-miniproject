@@ -1,6 +1,8 @@
 from torch import torch.empty
 torch.set_grad_enabled(False)
 
+#tutorial
+
 class Linear():
     
     def __init__(self,in_size,out_size,add_bias=True):
