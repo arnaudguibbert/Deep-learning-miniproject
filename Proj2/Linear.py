@@ -1,4 +1,4 @@
-import torch
+from torch import torch.empty
 torch.set_grad_enabled(False)
 
 class Linear():
