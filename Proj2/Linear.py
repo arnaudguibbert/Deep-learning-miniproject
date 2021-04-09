@@ -1,5 +1,7 @@
 from torch import empty
 
+#tutorial
+
 class Linear():
     
     def __init__(self,in_size,out_size,add_bias=True):
