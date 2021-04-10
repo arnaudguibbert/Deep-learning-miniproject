@@ -1,16 +1,15 @@
-import torch
-torch.set_grad_enabled(False)
+from torch import empty
 
 class Sequential():
     
-    def __init__(self,*sequence,loss=MSE):
+    def __init__(self,*sequence,loss="MSE"):
         self.sequence = sequence
         self.inputs = None
         self.back = False
         
     def forward(self,inputs):
         self.inputs = inputs
-        output = torch.clone(inputs)
+        output = inputs.clone()
         for module in self.sequence:
             output = module.forward(output)
         return output
@@ -19,19 +18,19 @@ class Sequential():
         if self.inputs == None:
             return "Forward pass has not been performed"
         for module in self.sequence:
-            output = module.backward(grdwrtoutput)
+            _ = module.backward(grdwrtoutput)
             
     def optimization_step(self,lr):
         if not self.back:
             return "Backward step has not been performed"
         for module in self.sequence:
-            if hasattr(module,"oprimization_step"):
+            if hasattr(module,"optimization_step"):
                 module.optimization_step(lr)
                 
     def zero_grad(self):
-    for module in self.sequence:
-        if hasattr(module,"zero_grad"):
-            module.zero_grad()
+        for module in self.sequence:
+            if hasattr(module,"zero_grad"):
+                module.zero_grad()
 
     def reset(self):
         for module in self.sequence:

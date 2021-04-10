@@ -1,5 +1,4 @@
-import torch
-torch.set_grad_enabled(False)
+from torch import empty
 
 class Tanh():
     
@@ -7,7 +6,7 @@ class Tanh():
         self.inputs = []
         
     def tanh(self,x):
-        return (torch.exp(x) - torch.exp(-x))/(torch.exp(x) + torch.exp(-x))
+        return (x.exp() - (-x).exp())/(x.exp() + (-x).exp())
         
     def forward(self,inputs):
         self.inputs.append(inputs)
