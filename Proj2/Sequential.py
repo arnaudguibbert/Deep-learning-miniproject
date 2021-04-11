@@ -18,7 +18,7 @@ class Sequential():
         if self.inputs == None:
             return "Forward pass has not been performed"
         for module in self.sequence:
-            _ = module.backward(grdwrtoutput)
+            grdwrtoutput = module.backward(grdwrtoutput)
             
     def optimization_step(self,lr):
         if not self.back:
