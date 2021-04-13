@@ -52,21 +52,19 @@ class Sequential():
         if self.inputs == None:
             # Print an error message if forward hasn't been performed yet
             return "Forward pass has not been performed"
-        
-        # !! backward dans le mauvais sens? add self.sequence.reverse()
-        # generally I find this piece of code a bit weird:
-        
-        for module in self.sequence:
+        for module in reversed(self.sequence):
             # Compute the gradients
-            _ = module.backward(grdwrtoutput)
+            grdwrtoutput = module.backward(grdwrtoutput)
             
         # Set the backward flag to true
         self.back = True
             
     def optimization_step(self,lr):
         """
-        Goal: update the weights using module.optimization_step for all the linear modules involved
-        Inputs: lr = float > 0: learning rate
+        Goal: 
+        update the weights using module.optimization_step for all the linear modules involved
+        Inputs: 
+        lr = float > 0: learning rate
         Outputs:
         """
         # If the backward step hasn't been performed, return an error message
@@ -80,7 +78,8 @@ class Sequential():
                 
     def zero_grad(self):
         """
-        Goal: set all gradients to zero
+        Goal: 
+        set all gradients to zero
         Inputs: 
         Outputs:
         """
@@ -91,7 +90,8 @@ class Sequential():
 
     def reset(self):
         """
-        Goal: reset all parameters to their default value, reset the gradients to 0, reset the inputs attribute
+        Goal: 
+        reset all parameters to their default value, reset the gradients to 0, reset the inputs attribute
         Inputs: 
         Outputs:
         """
