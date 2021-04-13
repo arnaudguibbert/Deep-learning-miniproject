@@ -12,7 +12,6 @@ def create_naive_net():
         nn.ReLU(),
         nn.BatchNorm2d(32),
         nn.Flatten(),
-        nn.Linear(128, 2),
-        nn.Sigmoid()
+        nn.Linear(128, 2)
     )
     return model
