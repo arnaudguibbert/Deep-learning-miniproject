@@ -41,7 +41,8 @@ class Linear():
         output = torch tensor - size NxDout (N number of datapoints, Dout output size of the layer)
         """
         # Store the input into the input attribute (will be useful for the backward step)
-        self.inputs = inputs 
+        if no_grad = False:
+            self.inputs = inputs 
         # Compute the output
         output = inputs@(self.weights.T)
         if self.bias is not None:

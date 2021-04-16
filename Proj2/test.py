@@ -36,10 +36,7 @@ def compute_nb_errors(model, data_input, data_target, batch_size = 100):
     nb_errors = 0
     for b in range(0, data_input.size(0), batch_size):
         target = data_target[b:b+batch_size]
-        
-        # need something like "with torch.no_grad" here
-        
-        output = model.forward(data_input[b:b+batch_size]).argmax(1)
+        output = model.forward(data_input[b:b+batch_size], no_grad=True).argmax(1)
         nb_errors += (target != output).sum()
     return nb_errors
 
@@ -55,8 +52,6 @@ def train_model(model, train_input, train_target,
         errors = []
     
     for e in range(nb_epochs):
-        if create_plot:
-            error = compute_nb_errors(model, train_input, train_target)
         
         for b in range(0, train_input.size(0), mini_batch_size):
             output = model.forward((train_input.narrow(0, b, mini_batch_size)))
@@ -65,9 +60,18 @@ def train_model(model, train_input, train_target,
             model.zero_grad()
             model.backward(grdwrtoutput)
             model.optimization_step(lr)
-    
-    
-    
+
+        if create_plot:
+            error = compute_nb_errors(model, train_input, train_target)/train_input.size(0)
+            errors.append(error)
+            
+    if create_plot:
+        plt.plot(np.arange(nb_epochs), errors)
+        plt.xlegend("nb of epochs")
+        plt.ylegend("error rate")
+        plt.title("error in function of epochs")
+        plt.show()    
+
     
     
     

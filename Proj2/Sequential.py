@@ -24,7 +24,7 @@ class Sequential():
         # Initialize the back flag (true if backpropagation has been performed)
         self.back = False
         
-    def forward(self,inputs, no_grad=False):
+    def forward(self,inputs,no_grad=False):
         """
         Goal:
         Perform the forward path
@@ -33,7 +33,8 @@ class Sequential():
         Outputs:
         output of the forward path = torch tensor
         """
-        self.inputs = inputs
+        if not no_grad:
+            self.inputs = inputs
         # Initialize the variable that will later contain the output
         output = inputs.clone()
         # Perform the forward path by calling the forward method of every module in the sequence
