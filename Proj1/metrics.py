@@ -6,16 +6,22 @@ import pandas as pd
 import seaborn as sns
 from dlc_practical_prologue import generate_pair_sets
 
+
 def train_model(model, train_input, train_target, train_classes,
                 nb_epochs=50, 
                 mini_batch_size = 100, 
                 eta = 0.1, 
                 criterion = nn.CrossEntropyLoss()):
     optimizer = torch.optim.Adam(model.parameters(), lr = eta)
+    target_type = model.target_type
+    weights_loss = model.weights_loss
     for epochs in range(nb_epochs):
         for b in range(0, train_input.size(0), mini_batch_size):
             output = model(train_input.narrow(0, b, mini_batch_size))
-            loss = criterion(output, train_target.narrow(0, b, mini_batch_size))
+            if len(target_type) > 1:
+                loss = 
+            else:
+                loss = criterion(output, train_target.narrow(0, b, mini_batch_size))
             model.zero_grad()
             loss.backward()
             optimizer.step()
