@@ -55,7 +55,6 @@ class Sequential():
         for module in reversed(self.sequence):
             # Compute the gradients
             grdwrtoutput = module.backward(grdwrtoutput)
-            
         # Set the backward flag to true
         self.back = True
             
