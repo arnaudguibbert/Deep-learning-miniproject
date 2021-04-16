@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class Naive_net(nn.Module):
 
     def __init__(self):
@@ -51,3 +52,4 @@ class Naive_net_2(nn.Module):
     def forward(self,input):
         output = self.sequence(input)
         return output
+
