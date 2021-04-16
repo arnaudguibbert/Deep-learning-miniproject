@@ -19,7 +19,7 @@ class Naive_net(nn.Module):
             nn.ReLU(),
             nn.Linear(64,2)
         )
-        self.target_type = ["target1"]
+        self.target_type = ["target0"]
         self.weights_loss = [1]
 
     def forward(self,input):
@@ -45,6 +45,8 @@ class Naive_net_2(nn.Module):
             nn.ReLU(),
             nn.Linear(64,2)
         )
+        self.target_type = ["target0"]
+        self.weights_loss = [1]
 
     def forward(self,input):
         output = self.sequence(input)

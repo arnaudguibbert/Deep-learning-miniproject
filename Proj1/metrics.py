@@ -19,45 +19,23 @@ def train_model(model, train_input, train_target, train_classes,
         for b in range(0, train_input.size(0), mini_batch_size):
             output = model(train_input.narrow(0, b, mini_batch_size))
             if len(target_type) > 1:
-                loss = 
+                loss_list = []
+                for i,target in enumerate(target_type):
+                    if target == "target0":
+                        partial_loss = weights_loss[i]*criterion(output[i], train_target.narrow(0, b, mini_batch_size))
+                        loss_list.append()
+                    elif target == "target1":
+                        partial_loss = weights_loss[i]*criterion(output[i], train_classes.narrow(0, b, mini_batch_size))
+                    else:
+                        return "Unexpected value in the attribute target_type"
+                    loss_list.append(partial_loss)
+                loss = sum(loss_list)
             else:
                 loss = criterion(output, train_target.narrow(0, b, mini_batch_size))
             model.zero_grad()
             loss.backward()
             optimizer.step()
-     
-"""
-def compute_nb_errors(model, data_input, data_target, mini_batch_size=100):
-    nb_data_errors = 0
-    for b in range(0, data_input.size(0), mini_batch_size):
-        output = model(data_input.narrow(0, b, mini_batch_size))
-        _, predicted_classes = torch.max(output, 1)
-        for k in range(mini_batch_size):
-            if data_target[b + k] != predicted_classes[k]:
-                nb_data_errors = nb_data_errors + 1
-    return nb_data_errors
 
-
-
-def plot_error_vs_epochs(model, max_nb_epochs, step, train_input, train_target, test_input, test_target):
-
-    To be checked.
-    Goal: plot number of errors in function of nb epochs on the stream ie while training the model (for efficiency reasons)
-
-    error_rates = []
-    
-    for nb_epochs in range(0, max_nb_epochs//step):
-        # Train model for 'step' epochs, compute error at each iteration
-        train_model(model, train_input, train_target, nb_epochs=step)
-        error = compute_nb_errors(model, test_input, test_target)/test_input.size(0)
-        error_rates.append(error)
-        
-    plt.plot(np.arange(0, max_nb_epochs, step), error_rates)
-    plt.xlabel("number of epochs")
-    plt.ylabel("error rate")
-    plt.title("Naive Net")
-    plt.show()
-"""
 
 class Cross_validation():
 
@@ -144,6 +122,11 @@ class Cross_validation():
             model = Myclass(*args)
             new_data = torch.zeros(len(self.columns)).view(1,-1)
             if self.steps is not None:
+                accuracy_train = self.accuracy(model,train_input,train_target)
+                accuracy_test = self.accuracy(model,test_input,test_target)
+                row_test = torch.tensor([runs,index,accuracy_test,1,0]).view(1,-1)
+                row_train = torch.tensor([runs,index,accuracy_train,0,0]).view(1,-1)
+                new_data = torch.cat((new_data,row_train,row_test),dim=0)
                 for step in range(self.steps,self.epochs,self.steps):
                     train_model(model, 
                                 train_input, 
