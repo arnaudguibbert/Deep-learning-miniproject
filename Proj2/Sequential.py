@@ -24,7 +24,7 @@ class Sequential():
         # Initialize the back flag (true if backpropagation has been performed)
         self.back = False
         
-    def forward(self,inputs):
+    def forward(self,inputs, no_grad=False):
         """
         Goal:
         Perform the forward path
