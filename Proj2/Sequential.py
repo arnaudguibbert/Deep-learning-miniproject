@@ -9,7 +9,7 @@ backward step implementation a bit strange
 
 class Sequential():
     
-    def __init__(self,*sequence,loss="MSE"):
+    def __init__(self,sequence,loss="MSE"):  # deleted the * before "sequence" so that a list of modules works
         """
         Goal:
         Inputs: 

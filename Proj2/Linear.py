@@ -41,12 +41,11 @@ class Linear():
         output = torch tensor - size NxDout (N number of datapoints, Dout output size of the layer)
         """
         # Store the input into the input attribute (will be useful for the backward step)
-        if no_grad = False:
-            self.inputs = inputs 
+        self.inputs = inputs 
         # Compute the output
         output = inputs@(self.weights.T)
         if self.bias is not None:
-            output += self.bias # Add bias
+            output += self.bias.T.expand(self.inputs.size(0), self.bias.size(0)) # Add bias // Attention: no scaling, bias must have size Nxout_size
         return output
         
     def backward(self,grdwrtoutput):

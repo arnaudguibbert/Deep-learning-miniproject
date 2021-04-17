@@ -1,35 +1,35 @@
 from Linear import *
 from MSELoss import *
-from RELu import *
+from ReLU import *
 from Sequential import *
 from Tanh import *
 from math import pi, sqrt
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn
+import seaborn as sns
 import torch # à corriger
 
 def generate_disc_set(nb=1000):
     train_set = torch.empty(nb, 2).uniform_()
-    test_set = train_set - torch.empty(1).fill_(0.5)
-    test_set = (test_set.pow(2).sum(1) < 1/sqrt(2*pi)) # Outside the circle is actually quite rare (about 2.4% of the samples)
-    test_set = torch.Tensor([int(x) for x in test_set]) # à corriger
-    return train_set, test_set
+    train_target = train_set - torch.empty(1).fill_(0.5)
+    train_target = (train_target.pow(2).sum(1) < 1/sqrt(2*pi)) # Outside the circle is actually quite rare (about 2.4% of the samples)
+    train_target = torch.Tensor([int(x) for x in train_target]) # à corriger
+    return train_set, train_target
 
 def create_model(nb_layers=3, layer_size=16):
-    fc1 = Linear.Linear(2, layer_size)
-    relu = ReLU.ReLU()
-    tanh = Tanh.Tanh()
+    fc1 = Linear(2, layer_size)
+    relu = ReLU()
+    tanh = Tanh()
     layers_list = []
     for i in range(nb_layers):
-        fc = Linear.Linear(layer_size, layer_size)
+        fc = Linear(layer_size, layer_size)
         layers_list.append(fc)
         layers_list.append(relu)
-    fc2 = Linear.Linear(layer_size, 2)
+    fc2 = Linear(layer_size, 2)
     
     sequence = [fc1, relu] + layers_list + [fc2, tanh]
         
-    return Sequential.Sequential(sequence)
+    return Sequential(sequence)
 
 
 def compute_nb_errors(model, data_input, data_target, batch_size = 100):
@@ -41,7 +41,7 @@ def compute_nb_errors(model, data_input, data_target, batch_size = 100):
     return nb_errors
 
 
-def train_model(model, train_input, train_target, 
+def train_model(model, train_input, train_target, test_input, test_target,
                 nb_epochs = 100, mini_batch_size = 100, lr = 5e-2,
                create_plot=False):
     # still need to add the figure
@@ -49,30 +49,29 @@ def train_model(model, train_input, train_target,
     model.reset()
     
     if create_plot:
-        errors = []
+        train_errors, test_errors = [], []
     
     for e in range(nb_epochs):
         
         for b in range(0, train_input.size(0), mini_batch_size):
             output = model.forward((train_input.narrow(0, b, mini_batch_size)))
-            loss = MSELoss.forward(train_target, output)
-            grdwrtoutput = MSELoss.backward()
+            mse = MSELoss() #create an instance of MSELoss
+            loss = mse.forward(train_target, output)
+            grdwrtoutput = mse.backward()
             model.zero_grad()
             model.backward(grdwrtoutput)
             model.optimization_step(lr)
 
         if create_plot:
-            error = compute_nb_errors(model, train_input, train_target)/train_input.size(0)
-            errors.append(error)
+            train_error = compute_nb_errors(model, train_input, train_target)/train_input.size(0)
+            test_error = compute_nb_errors(model, test_input, test_target)/test_input.size(0)
+            train_errors.append(train_error)
+            test_errors.append(test_error)
             
     if create_plot:
-        plt.plot(np.arange(nb_epochs), errors)
+        plt.plot(np.arange(nb_epochs), test_errors)
+        plt.plot(np.arange(nb_epochs), train_errors)
         plt.xlegend("nb of epochs")
-        plt.ylegend("error rate")
+        plt.ylegend("train and test errors")
         plt.title("error in function of epochs")
         plt.show()    
-
-    
-    
-    
-    
