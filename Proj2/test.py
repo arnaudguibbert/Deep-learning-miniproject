@@ -13,7 +13,7 @@ def generate_disc_set(nb=1000):
     train_set = torch.empty(nb, 2).uniform_()
     train_target = train_set - torch.empty(1).fill_(0.5)
     train_target = (train_target.pow(2).sum(1) < 1/sqrt(2*pi)) # Outside the circle is actually quite rare (about 2.4% of the samples)
-    train_target = torch.Tensor([int(x) for x in train_target]) # à corriger
+    train_target = torch.Tensor([[2*int(x)-1, 1-2*int(x)] for x in train_target]) # à corriger
     return train_set, train_target
 
 def create_model(nb_layers=3, layer_size=16):
@@ -56,7 +56,7 @@ def train_model(model, train_input, train_target, test_input, test_target,
         for b in range(0, train_input.size(0), mini_batch_size):
             output = model.forward((train_input.narrow(0, b, mini_batch_size)))
             mse = MSELoss() #create an instance of MSELoss
-            loss = mse.forward(train_target, output)
+            loss = mse.forward(train_target.narrow(0, b, mini_batch_size), output)
             grdwrtoutput = mse.backward()
             model.zero_grad()
             model.backward(grdwrtoutput)

@@ -66,7 +66,7 @@ class Linear():
         self.grdweights += (grdwrtoutput.T)@self.inputs
         if self.bias is not None:
             # Compute the gradient with respect to the bias and accumulate
-            self.grdbias += grdwrtoutput
+            self.grdbias += grdwrtoutput.mean(0).T
         # Set the flag back to true --> means ready for the optimization step
         self.back = True
         return grdwrtinput
