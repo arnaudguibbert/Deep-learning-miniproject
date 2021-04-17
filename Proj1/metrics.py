@@ -23,7 +23,6 @@ def train_model(model, train_input, train_target, train_classes,
                 for i,target in enumerate(target_type):
                     if target == "target0":
                         partial_loss = weights_loss[i]*criterion(output[i], train_target.narrow(0, b, mini_batch_size))
-                        loss_list.append()
                     elif target == "target1":
                         partial_loss = weights_loss[i]*criterion(output[i], train_classes.narrow(0, b, mini_batch_size))
                     else:
@@ -98,10 +97,13 @@ class Cross_validation():
         Inputs:
         Outputs:
         """
-        output = model(input)
-        _,predicted = torch.max(output,dim=1)
-        errors = torch.where(target != predicted,1,0).sum().item()
-        accuracy = (1 - errors/(target.shape[0]))*100
+        with torch.no_grad():
+            output = model(input)
+            if len(model.target_type) > 1:
+                output = output[0]
+            _,predicted = torch.max(output,dim=1)
+            errors = torch.where(target != predicted,1,0).sum().item()
+            accuracy = (1 - errors/(target.shape[0]))*100
         return accuracy
 
     def run_one(self,archi_name):
@@ -149,10 +151,7 @@ class Cross_validation():
                 row_test = torch.tensor([runs,index,accuracy_test,1,self.epochs]).view(1,-1)
                 row_train = torch.tensor([runs,index,accuracy_train,0,self.epochs]).view(1,-1)
                 new_data = torch.cat((new_data,row_train,row_test),dim=0)
-            run_str = "runs n°" + str(runs)
-            accu_str_train = "accuracy train = " + str(round(accuracy_train,1))
-            accu_str_test = "accuracy test = " + str(round(accuracy_test,1))
-            row = [archi_name,run_str,accu_str_train,accu_str_test]
+            row = [archi_name,str(runs),str(round(accuracy_train,1)),str(round(accuracy_test,1))]
             print(self.row_format.format(*row)) # Print the header
             new_data = new_data[1:]
             df = pd.DataFrame(data=new_data.tolist(),columns=self.columns)
@@ -165,6 +164,10 @@ class Cross_validation():
         Inputs:
         Outputs:
         """
+        header = ["Architecture","Runs","Accuracy Train","Accuracy Test"]
+        under_header = ["-"*len(word) for word in header]
+        print(self.row_format.format(*header)) # Print the header
+        print(self.row_format.format(*under_header)) # Print the header
         for archi_name in self.archi_names:
             self.run_one(archi_name)
 
@@ -175,6 +178,9 @@ class Cross_validation():
         Outputs:
         """
         self.dataframe = self.dataframe.query("accuracy < 1e3")
+
+    def reset(self):
+        self.dataframe = pd.DataFrame([[1e20,1e20,1e20,1e20,1e20]],columns=self.columns)
     
     def plot_std(self,figure,subplot):
         """
@@ -183,7 +189,7 @@ class Cross_validation():
         Outputs:
         """
         sns.set_style("darkgrid")
-        ax = figure.add_subplot(subplot)
+        ax = figure.add_subplot(*subplot)
         title = "Results (epochs = " + str(self.epochs) + ")"
         max_epochs = self.dataframe["epochs"].max()
         std_data = self.dataframe.query("epochs == " + str(max_epochs))
@@ -195,7 +201,6 @@ class Cross_validation():
         ax.set_xticklabels(self.archi_names,fontsize=13)
         ax.set_xlabel("Architectures",fontsize=13)
         ax.set_ylabel("Accuracy",fontsize=13)
-        plt.show()
 
     def plot_evolution(self,archi_name,figure,subplot,fontsize=13):
         """
@@ -205,7 +210,7 @@ class Cross_validation():
         """
         sns.set_style("darkgrid")
         title = archi_name
-        ax = figure.add_subplot(subplot)
+        ax = figure.add_subplot(*subplot)
         index = self.archi_names.index(archi_name)
         archi_data = self.dataframe[self.dataframe["architecture"] == index]
         sns.lineplot(data=archi_data,x="epochs",y="accuracy",hue="type",ax=ax,ci=90)
@@ -215,6 +220,40 @@ class Cross_validation():
         ax.set_xlabel("Epochs",fontsize=13)
         ax.set_ylabel("Accuracy",fontsize=13)
         ax.legend(handles,labels,fontsize=13)
+
+    def plot_evolution_all(self,figure,subplot,test=True):
+        """
+        Goal:
+        Inputs:
+        Outputs:
+        """
+        sns.set_style("darkgrid")
+        subtitle = "test"*test + "train"*(not test)
+        title = "Evolution of the " + subtitle + " accuracy"
+        ax = figure.add_subplot(*subplot)
+        if test:
+            accu_evo = self.dataframe.query("type == 1")
+        else:
+            accu_evo = self.dataframe.query("type == 0")
+        sns.lineplot(data=accu_evo,x="epochs",y="accuracy",hue="architecture",ax=ax,ci=90)
+        handles, labels = ax.get_legend_handles_labels()
+        labels = [self.archi_names[int(float(label))] for label in labels] 
+        ax.legend(handles,labels,fontsize=13)
+        ax.set_xlabel("Epochs",fontsize=13)
+        ax.set_ylabel("Accuracy",fontsize=13)
+        ax.legend(handles,labels,fontsize=13)
+        ax.set_title(title,fontsize=13)
+
+    def plot_full_comparison(self):
+        """
+        Goal:
+        Inputs:
+        Outputs:
+        """
+        fig = plt.figure(figsize=[16,10])
+        self.plot_evolution_all(fig,[2,2,1],test=False)
+        self.plot_evolution_all(fig,[2,2,2])
+        self.plot_std(fig,[2,2,(3,4)])
         plt.show()
         
 

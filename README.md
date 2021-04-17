@@ -11,7 +11,7 @@ La fonction train a été optimisée. Une nouvelle architecture a été et doit 
 ### Projet 2:
 Le fichier test.py a été complété (run.py), réseau de neurones à entraîner.
 ## Travail à réaliser:
-Everyone: Commenter le code
-Victor: implementer nouvelle architecture dans architecture.py (Projet 1)
-Arthur: Tester l'algorithme et vérifier qu'il fonctionne bien (Projet 2)
-Arnaud: Finir les graphes, implementer la première architecture vue avec arthur (Projet 2)
+Everyone: Commenter le code  
+Victor: implementer nouvelle architecture dans architecture.py (Projet 1)  
+Arthur: Tester l'algorithme et vérifier qu'il fonctionne bien (Projet 2)  
+Arnaud: Finir les graphes, implementer la première architecture vue avec arthur (Projet 2)  
