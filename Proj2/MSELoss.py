@@ -32,7 +32,7 @@ class MSELoss():
         self.targets = targets
         if self.mean:
             # Compute the loss and take the mean
-            loss = (((inputs - targets)**2).sum(dim=1)).mean()
+            loss = ((inputs - targets)**2).mean()
         else:
             # Compute the loss and take the sum
             loss = ((inputs - targets)**2).sum()

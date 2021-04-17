@@ -45,7 +45,7 @@ class Linear():
         # Compute the output
         output = inputs@(self.weights.T)
         if self.bias is not None:
-            output += self.bias.T.expand(self.inputs.size(0), self.bias.size(0)) # Add bias // Attention: no scaling, bias must have size Nxout_size
+            output += self.bias.T.expand(self.inputs.size(0), self.bias.size(0)) # Add bias
         return output
         
     def backward(self,grdwrtoutput):
@@ -66,7 +66,7 @@ class Linear():
         self.grdweights += (grdwrtoutput.T)@self.inputs
         if self.bias is not None:
             # Compute the gradient with respect to the bias and accumulate
-            self.grdbias += grdwrtoutput.mean(0).T
+            self.grdbias += (grdwrtoutput.T).mean()
         # Set the flag back to true --> means ready for the optimization step
         self.back = True
         return grdwrtinput
