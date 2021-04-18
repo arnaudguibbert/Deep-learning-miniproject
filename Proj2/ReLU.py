@@ -11,7 +11,7 @@ class ReLU():
         # Initialize the list of inputs attribute
         self.inputs = []
         
-    def forward(self,inputs):
+    def forward(self,inputs,no_grad=False):
         """
         Goal:
         Perform the forward step using ReLU
@@ -20,8 +20,9 @@ class ReLU():
         Outputs: 
         torch tensor of the same size
         """
-        # Add inputs to the attribute "input"
-        self.inputs.append(inputs)
+        if not no_grad:
+            # Add inputs to the attribute "input"
+            self.inputs.append(inputs)
         # Set all negative components of input to zero to get ReLU of the inputs
         output = inputs.clone()
         output[inputs <= 0] = 0
@@ -36,8 +37,9 @@ class ReLU():
         Outputs: 
         torch tensor of the same size storing the gradient with respect to the input
         """
-        inputs = self.inputs.pop(0)
-        
+        if len(self.inputs) == 0:
+            return "Forward step has not been performed"
+        inputs = self.inputs.pop()
         # grdphi contains the component-wise gradient of ReLU
         grdphi = empty(inputs.shape).fill_(0)
         grdphi[inputs > 0] = 1

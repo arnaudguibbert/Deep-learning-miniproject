@@ -21,7 +21,7 @@ class Tanh():
         """
         return (x.exp() - (-x).exp())/(x.exp() + (-x).exp())
         
-    def forward(self,inputs):
+    def forward(self,inputs,no_grad=False):
         """
         Goal: 
         Perform the forward step computing tanh
@@ -30,8 +30,9 @@ class Tanh():
         Outputs: 
         Torch tensor of the same size = tanh(input)
         """
-        # Add inputs to the attribute "input"
-        self.inputs.append(inputs)
+        if not no_grad:
+            # Add inputs to the attribute "input"
+            self.inputs.append(inputs)
         # Compute tanh of the input
         output = self.tanh(inputs)
         return output
@@ -46,9 +47,7 @@ class Tanh():
         torch tensor of the same size storing the gradient with respect to the input
         """
         if len(self.inputs) == 0:
-            # Return an error message if the forward step hasn't yet occured
-            "Forward step has not been performed"
-        # self.input is supposed to store 1 element, the inputs
+            return "Forward step has not been performed"
         inputs = self.inputs.pop()
         # Compute the gradient using chain rule and return it
         grdwrtinput = (1 - self.tanh(inputs)**2)*grdwrtoutput

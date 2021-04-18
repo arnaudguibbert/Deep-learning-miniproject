@@ -50,9 +50,9 @@ class MSELoss():
             return "Forward step has not been performed"
         if self.mean:
             # Compute the gradient 
-            grdwrtinput = 2*(self.inputs-self.targets).mean(dim=0)
+            grdwrtinput = 2*(self.inputs-self.targets)/(self.inputs.shape[0])
         else:
-            grdwrtinput = 2*(self.inputs-self.targets).sum(dim=0)
+            grdwrtinput = 2*(self.inputs-self.targets)
         return grdwrtinput    
       
     @property

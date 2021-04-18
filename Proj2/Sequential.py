@@ -19,8 +19,6 @@ class Sequential():
         """
         # Initialize the sequence attribute, containing modules of models and losses
         self.sequence = sequence
-        # Initialize the inputs attribute
-        self.inputs = None
         # Initialize the back flag (true if backpropagation has been performed)
         self.back = False
         
@@ -33,13 +31,11 @@ class Sequential():
         Outputs:
         output of the forward path = torch tensor
         """
-        if not no_grad:
-            self.inputs = inputs
         # Initialize the variable that will later contain the output
         output = inputs.clone()
         # Perform the forward path by calling the forward method of every module in the sequence
         for module in self.sequence:
-            output = module.forward(output)
+            output = module.forward(output,no_grad=no_grad)
         return output
         
     def backward(self,grdwrtoutput):
@@ -50,12 +46,12 @@ class Sequential():
         grdwrtoutput = torch tensor of size number of samples x size of the last layer // gradient with respect to the output
         Outputs:
         """
-        if self.inputs == None:
-            # Print an error message if forward hasn't been performed yet
-            return "Forward pass has not been performed"
         for module in reversed(self.sequence):
             # Compute the gradients
             grdwrtoutput = module.backward(grdwrtoutput)
+            if grdwrtoutput == "Forward step has not been performed":
+                message = str(type(module).__name__) + " : " + grdwrtoutput
+                return message
         # Set the backward flag to true
         self.back = True
             

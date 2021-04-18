@@ -1,4 +1,5 @@
 from torch import empty
+import torch
 import math
 
 
@@ -27,11 +28,11 @@ class Linear():
             self.bias = None
             self.grdbias = None
         # Initialize the inputs attribute
-        self.inputs = None
+        self.inputs = []
         # Initialize the back flag (true if backpropagation has been performed)
         self.back = False
             
-    def forward(self,inputs):
+    def forward(self,inputs,no_grad=False):
         """
         Goal:
         Perform the forward step
@@ -41,11 +42,12 @@ class Linear():
         output = torch tensor - size NxDout (N number of datapoints, Dout output size of the layer)
         """
         # Store the input into the input attribute (will be useful for the backward step)
-        self.inputs = inputs 
+        if not no_grad:
+            self.inputs.append(inputs) 
         # Compute the output
         output = inputs@(self.weights.T)
         if self.bias is not None:
-            output += self.bias.T.expand(self.inputs.size(0), self.bias.size(0)) # Add bias
+            output += self.bias.T # Add bias
         return output
         
     def backward(self,grdwrtoutput):
@@ -58,15 +60,16 @@ class Linear():
         grdwrtinput = torch tensor - size NxDin (N number of datapoints, Din input size of the layer)
         """
         # if the forward step has not been performed raise an error message
-        if self.inputs is None:
+        if len(self.inputs) == 0:
             return "Forward step has not been performed"
+        inputs = self.inputs.pop()
         # Compute the gradient with respect to the input and accumulate
         grdwrtinput = grdwrtoutput@self.weights 
         # Compute the gradient with respect to the weights
-        self.grdweights += (grdwrtoutput.T)@self.inputs
+        self.grdweights += (grdwrtoutput.T)@inputs
         if self.bias is not None:
             # Compute the gradient with respect to the bias and accumulate
-            self.grdbias += (grdwrtoutput.T).mean()
+            self.grdbias += grdwrtoutput.sum(dim=0).view(-1,1)
         # Set the flag back to true --> means ready for the optimization step
         self.back = True
         return grdwrtinput
