@@ -59,6 +59,42 @@ class MnistCNN(nn.Module):
         output = self.sequence(input)
         return output
 
+class Simple_Net(nn.Module):
+	
+    def __init__(self):
+        super().__init__()
+        self.sequence = nn.Sequential(
+            #simpleNet inspired implementation :https://github.com/Coderx7/SimpleNet
+            #Conv1
+            nn.Conv2d(1,64,kernel_size=(3,3)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            
+            nn.Conv2d(64,128,kernel_size=(3,3)), 
+            nn.BatchNorm2d(128),
+            nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
+            nn.ReLU(),
+            
+            nn.Conv2d(128,128,kernel_size=(3,3)), 
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.Conv2d(128,128,kernel_size=(1,1)), 
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.Conv2d(128,128,kernel_size=(3,3)), 
+            
+            nn.Flatten(),
+            nn.Linear(128,64),
+            nn.ReLU(),
+            nn.BatchNorm1d(64),
+            nn.Linear(64,10)
+        )
+
+    def forward(self,input):
+        output = self.sequence(input)
+        return output
 
 class CrossArchitecture(nn.Module):
 
@@ -66,6 +102,8 @@ class CrossArchitecture(nn.Module):
         super().__init__()
         self.MnistNet = MnistCNN()
         self.NaiveNet = Naive_net()
+        self.SimpleNet = Simple_Net()
+        #target 1 is the class and target 0 is the comparison (??)
         self.target_type = ["target0","target1"]
         self.Linear1 = nn.Linear(22,11)
         self.Linear2 = nn.Linear(11,2)

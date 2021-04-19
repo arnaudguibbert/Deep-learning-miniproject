@@ -10,7 +10,7 @@ from dlc_practical_prologue import generate_pair_sets
 def train_model(model, train_input, train_target, train_classes,
                 nb_epochs=50, 
                 mini_batch_size = 100, 
-                eta = 0.1):
+                eta = 0.05):
     """
     Goal:
     Train a given model 
@@ -153,6 +153,8 @@ class Cross_validation():
             if len(model.target_type) > 1: 
                  # Let's take the real one (by convention the first returned)
                 main_output = output[0] 
+            else :
+                main_output=output
             _,predicted = torch.max(main_output,dim=1) # Compute the prediction
             # Compute the number of errors
             errors = torch.where(target != predicted,1,0).sum().item()
