@@ -18,8 +18,8 @@ def generate_disc_set(nb=1000):
 
 def create_model(nb_layers=3, layer_size=16):
     fc1 = Linear(2, layer_size)
-    relu = ReLU()
     tanh = Tanh()
+    relu = ReLU()
     layers_list = []
     for i in range(nb_layers):
         fc = Linear(layer_size, layer_size)
