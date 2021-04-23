@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import pandas as pd
 import seaborn as sns
+from time import perf_counter
 from dlc_practical_prologue import generate_pair_sets
 
 
@@ -92,7 +93,9 @@ class Cross_validation():
         self.runs = runs # Number of runs
         # Columns of the data frame where all the data will be stored (will be used for the graphs)
         self.columns = ["run_id","architecture","accuracy","type","epochs"]
-        # Create the data frame
+        # Create the data frames
+        self.columns_time = ["architecture","time","run_id"]
+        self.datatime = pd.DataFrame([[1e20,1e20,1e20]],columns=self.columns_time)
         self.dataframe = pd.DataFrame([[1e20,1e20,1e20,1e20,1e20]],columns=self.columns)
         # Load the the data set
         data = generate_pair_sets(load)
@@ -103,9 +106,9 @@ class Cross_validation():
         self.test_input, self.test_target, self.test_classes = data[3], data[4], data[5]
         self.steps = steps # Get Granularity for the graphs
         # Row format for the logs
-        self.row_format = '{:<20}{:<15}{:<25}{:<25}' # Define the display format
+        self.row_format = '{:<20}{:<15}{:<25}{:<25}{:<15}' # Define the display format
 
-    def split_data(self):
+    def split_data(self,nb_classes=10):
         """
         To be modified to take into account the classes
         Goal:
@@ -125,6 +128,7 @@ class Cross_validation():
         test_classes = tensor - size (1000x2)
                         Classes (i.e. numbers) of the two images - belongs to {1,...,10}
         """
+        
         shuffle = torch.randperm(self.train_input.shape[0])
         index = shuffle[:self.size]
         train_input = self.train_input[index]
@@ -198,7 +202,9 @@ class Cross_validation():
             row_test = torch.tensor([runs,index,accuracy_test,1,0]).view(1,-1)
             row_train = torch.tensor([runs,index,accuracy_train,0,0]).view(1,-1)
             new_data = torch.cat((new_data,row_train,row_test),dim=0)
+            new_data_time = torch.zeros(len(self.columns_time)).view(1,-1)
             # Train the model and record the accuracy each self.steps epochs
+            start = perf_counter() # Start the chrono
             for step in range(self.steps,self.epochs,self.steps):
                 # Train the model for self.steps epochs
                 train_model(model, 
@@ -213,16 +219,26 @@ class Cross_validation():
                 row_test = torch.tensor([runs,index,accuracy_test,1,step]).view(1,-1)
                 row_train = torch.tensor([runs,index,accuracy_train,0,step]).view(1,-1)
                 new_data = torch.cat((new_data,row_train,row_test),dim=0)
+            # Store into the new_data_time tensor
+            end = perf_counter() # Stop the chrono
+            elapsed = (end - start)/self.steps # Compute the elapsed time
+            row_time = torch.tensor([index,elapsed,runs]).view(1,-1)
+            new_data_time = torch.cat((new_data_time,row_time),dim=0)
             # Row to be displayed/logged
-            row = [archi_name,str(runs),str(round(accuracy_train,1)),str(round(accuracy_test,1))]
+            row = [archi_name,runs,
+                   round(accuracy_train,1),
+                   round(accuracy_test,1),round(elapsed,1)]
             # Print a message about the performances of the architecture
             print(self.row_format.format(*row))
-            # Remove the first artificial line
-            new_data = new_data[1:]
-            # Add the new data to the existing data frame
-            df = pd.DataFrame(data=new_data.tolist(),columns=self.columns)
-            self.dataframe = self.dataframe.append(df,ignore_index=True)
+        # Remove the first artificial line
+        new_data = new_data[1:]
+        new_data_time = new_data_time[1:]
+        # Add the new data to the existing data frame
+        df = pd.DataFrame(data=new_data.tolist(),columns=self.columns)
+        self.dataframe = self.dataframe.append(df,ignore_index=True)
         # Remove the first artificial line of the data frame
+        df_time = pd.DataFrame(data=new_data_time.tolist(),columns=self.columns_time)
+        self.datatime = self.datatime.append(df_time,ignore_index=True)
         self.remove_line()
 
     def run_all(self):
@@ -236,7 +252,7 @@ class Cross_validation():
         Outputs:
         """
         # Header to be displayed
-        header = ["Architecture","Runs","Accuracy Train","Accuracy Test"]
+        header = ["Architecture","Runs","Accuracy Train","Accuracy Test","Time"]
         under_header = ["-"*len(word) for word in header]
         print(self.row_format.format(*header)) # Print the header
         print(self.row_format.format(*under_header)) # Print the the under_header
@@ -253,6 +269,7 @@ class Cross_validation():
         """
         # Remove the first line where accuracy was set to 1e20
         self.dataframe = self.dataframe.query("accuracy < 1e3")
+        self.datatime = self.datatime.query("time < 1e10")
 
     def reset(self):
         """
@@ -263,6 +280,7 @@ class Cross_validation():
         """
         # Reset the data frame
         self.dataframe = pd.DataFrame([[1e20,1e20,1e20,1e20,1e20]],columns=self.columns)
+        self.datatime = pd.DataFrame([[1e20,1e20,1e20]],columns=self.columns_time)
     
     def plot_std(self,figure,subplot):
         """
@@ -387,8 +405,3 @@ class Cross_validation():
         # Plot the boxplot
         self.plot_std(fig,[2,2,(3,4)])
         plt.show()
-        
-
-        
-        
-

@@ -13,5 +13,17 @@ Le fichier test.py a été complété (run.py), réseau de neurones à entraîne
 ## Travail à réaliser:
 Everyone: Commenter le code  
 Victor: implementer nouvelle architecture dans architecture.py (Projet 1)  
-Arthur: Tester l'algorithme et vérifier qu'il fonctionne bien (Projet 2)  
-Arnaud: Finir les graphes, implementer la première architecture vue avec arthur (Projet 2)  
+Arthur : Tester l'algorithme et vérifier qu'il fonctionne bien (Projet 2)  
+Arnaud : Finir les graphes, implementer la première architecture vue avec arthur (Projet 2)  
+
+# 23/04/2021
+## Work done:
+Arthur : Test du projet 2, aidé par Arnaud. Projet 1 fonctionnel et efficace, à nettoyer et run.py à créer. Nouvelle architecture implémentée (architecture croisée).  
+Victor : Revue de littérature, implémentation de simplenet, a essayé d'implémenter resNext.  
+Arnaud : Projet 1 fait avec Arthur, commentaire du code, MnistCNN et crossarchitecture.  
+## Petites tâches:
+Splitter les classes de manière équivalente en fonction des chiffres  
+Rajouter le temps  
+Tester SGD à la place de Adam  
+Tester SeLU à la place ReLU  
+## Travail à réaliser:
