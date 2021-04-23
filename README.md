@@ -27,5 +27,8 @@ Rajouter le temps
 Tester SGD à la place de Adam  
 Tester SeLU à la place ReLU  
 ## Travail à réaliser:
-Everyone : nettoyer le code 
-Victor : data augmentation
+Objectif fixé à 98% !!!!  
+Everyone : nettoyer le code
+Victor : data augmentation, architecture ResNext, allèger SimpleNet  
+Arthur : amélioration de oOnet, créer overleaf, nouvelle architecture, allèger MnistCNN  
+Arnaud : ajoute le temps aux graphiques, ajouter le nombre de paramètres de chaque modèle aux graphiques, nouvelle architecture, essayer de régler problème de unbalanced class.  
