@@ -27,3 +27,5 @@ Rajouter le temps
 Tester SGD à la place de Adam  
 Tester SeLU à la place ReLU  
 ## Travail à réaliser:
+Everyone : nettoyer le code 
+Victor : data augmentation
