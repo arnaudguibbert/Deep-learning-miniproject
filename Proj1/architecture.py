@@ -180,7 +180,7 @@ class oO_Net(nn.Module):
         lower_part = self.post_naive_sequence(lower_part)
         
         # Form the final outputs
-        temp1, temp2 = upper_part.view(upper_part2.shape[0], -1, 1), upper_part2.view(upper_part2.shape[0], -1, 1)
+        temp1, temp2 = upper_part1.view(upper_part1.shape[0], -1, 1), upper_part2.view(upper_part2.shape[0], -1, 1)
         output_up = torch.cat((temp1, temp2),dim=2)
         
         output_down = torch.cat((upper_part1,upper_part2,lower_part),dim=1)
