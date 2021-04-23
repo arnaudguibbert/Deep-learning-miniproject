@@ -186,4 +186,4 @@ class oO_Net(nn.Module):
         output_down = torch.cat((upper_part1,upper_part2,lower_part),dim=1)
         output_down = self.lower_last_sequence(output_down)
         
-        return output_up, output_down
+        return output_down, output_up
