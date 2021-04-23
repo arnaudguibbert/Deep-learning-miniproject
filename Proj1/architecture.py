@@ -126,27 +126,64 @@ class CrossArchitecture(nn.Module):
         output1 = self.Linear2(output1) # shape = (N,2)
         return output1, output2
 
-class oO_Net(nn.module):
+class oO_Net(nn.Module):
     
     def __init__(self):
         super().__init__()
-        self.Mnist_part = MnistCNN().sequence[:?]
-        self.Naive_part = Naive_net().sequence[:?]
         self.target_type = ["target0","target1"]
         self.weights_loss = [0.5,0.5]
-        # fc_{i,j} = jth fully-connected of the upper part if i=1, the lower part if i=2
-        self.fc11 = nn.Linear(?,10)
-        self.fc21 = nn.Linear(?,2)
-        self.fc22 = nn.Linear(22,11)
-        self.fc23 = nn.Linear(11,2)
+        
+        self.Mnist_part = MnistCNN().sequence[:18] # out shape = (N,64,2)
+        self.Naive_part = Naive_net().sequence[:9] # out shape = (N,128)
+
+        self.post_mnist_sequence = nn.Sequential(
+            nn.Linear(64,32),
+            nn.ReLU(),
+            nn.BatchNorm1d(32),
+            nn.Linear(32,10)
+        )
+        
+        self.post_naive_sequence = nn.Sequential(
+            nn.Linear(128,64),
+            nn.ReLU(),
+            nn.BatchNorm1d(64),
+            nn.Linear(64,2)
+        )
+        
+        self.lower_last_sequence = nn.Sequential(
+            nn.Linear(22,11),
+            nn.ReLU(),
+            nn.BatchNorm1d(11),
+            nn.Linear(11,2)
+        )
         
     def forward(self,input):
         num1 = input[:,[0],:,:]
         num2 = input[:,[1],:,:]
-        lower_output = self.Naive_part(input) # shape = (N,?)
         upper_output1 = self.Mnist_part(num1).view(num1.shape[0],-1,1)
         upper_output2 = self.Mnist_part(num2).view(num2.shape[0],-1,1)
-        upper_output = torch.cat((upper_output1,upper_output2),dim=2) # shape = (N,?,2)
-        # TODO: somehow sum both outputs after making them shape-compatible
-        # TODO: then take upper and lower parts to self.fc_i
-        pass
+        upper_output = torch.cat((upper_output1,upper_output2),dim=2) # shape = (N,64,2)
+        
+        lower_output = self.Naive_part(input) # shape = (N,128)
+        
+        # Sum both outputs after making them shape-compatible
+        upper_output = upper_output.view(upper_output.shape[0], -1) # shape = (N,128)
+        lower_part, upper_part = lower_output + upper_output, upper_output + lower_output
+        
+        # Then, take upper and lower parts to sizes 10 and 2 respectively
+        upper_part = upper_part.view(upper_part.shape[0],-1,2)
+        upper_part1, upper_part2 = upper_part[:,:,0], upper_part[:,:,1] # restore the two channels
+        
+        upper_part1 = self.post_mnist_sequence(upper_part1)
+        upper_part2 = self.post_mnist_sequence(upper_part2)
+        
+        lower_part = self.post_naive_sequence(lower_part)
+        
+        # Form the final outputs
+        temp1, temp2 = upper_part.view(upper_part2.shape[0], -1, 1), upper_part2.view(upper_part2.shape[0], -1, 1)
+        output_up = torch.cat((temp1, temp2),dim=2)
+        
+        output_down = torch.cat((upper_part1,upper_part2,lower_part),dim=1)
+        output_down = self.lower_last_sequence(output_down)
+        
+        return output_up, output_down
