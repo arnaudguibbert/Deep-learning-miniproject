@@ -110,15 +110,18 @@ class CrossArchitecture(nn.Module):
         self.weights_loss = [0.5,0.5]
     
     def forward(self,input):
+        """MnistCNN outputs a prediction for both digits, NaiveNet outputs the predicted comparison.
+        No weights shared up to that point. Then, two linear layers take these predictions as input (size N*22).
+        Output: predicted comparison of the two digits."""
         num1 = input[:,[0],:,:]
         num2 = input[:,[1],:,:]
-        output_naive = self.NaiveNet(input)
-        output_num1 = self.MnistNet(num1).view(num1.shape[0],-1,1)
-        output_num2 = self.MnistNet(num2).view(num2.shape[0],-1,1)
-        output2 = torch.cat((output_num1,output_num2),dim=2)
-        output_num1 = output_num1.view(num1.shape[0],-1)
-        output_num2 = output_num2.view(num2.shape[0],-1)
-        output1 = torch.cat((output_num1,output_num2,output_naive),dim=1)
+        output_naive = self.NaiveNet(input) # shape = (N,2)
+        output_num1 = self.MnistNet(num1).view(num1.shape[0],-1,1) # shape = (N,10,1)
+        output_num2 = self.MnistNet(num2).view(num2.shape[0],-1,1) # shape = (N,10,1)
+        output2 = torch.cat((output_num1,output_num2),dim=2) # shape = (N,10,2)
+        output_num1 = output_num1.view(num1.shape[0],-1) # shape = (N,10)
+        output_num2 = output_num2.view(num2.shape[0],-1) # shape = (N,10)
+        output1 = torch.cat((output_num1,output_num2,output_naive),dim=1) # shape = (N,22)
         output1 = self.Linear1(output1)
-        output1 = self.Linear2(output1)
+        output1 = self.Linear2(output1) # shape = (N,2)
         return output1, output2
