@@ -125,3 +125,28 @@ class CrossArchitecture(nn.Module):
         output1 = self.Linear1(output1)
         output1 = self.Linear2(output1) # shape = (N,2)
         return output1, output2
+
+class oO_Net(nn.module):
+    
+    def __init__(self):
+        super().__init__()
+        self.Mnist_part = MnistCNN().sequence[:?]
+        self.Naive_part = Naive_net().sequence[:?]
+        self.target_type = ["target0","target1"]
+        self.weights_loss = [0.5,0.5]
+        # fc_{i,j} = jth fully-connected of the upper part if i=1, the lower part if i=2
+        self.fc11 = nn.Linear(?,10)
+        self.fc21 = nn.Linear(?,2)
+        self.fc22 = nn.Linear(22,11)
+        self.fc23 = nn.Linear(11,2)
+        
+    def forward(self,input):
+        num1 = input[:,[0],:,:]
+        num2 = input[:,[1],:,:]
+        lower_output = self.Naive_part(input) # shape = (N,?)
+        upper_output1 = self.Mnist_part(num1).view(num1.shape[0],-1,1)
+        upper_output2 = self.Mnist_part(num2).view(num2.shape[0],-1,1)
+        upper_output = torch.cat((upper_output1,upper_output2),dim=2) # shape = (N,?,2)
+        # TODO: somehow sum both outputs after making them shape-compatible
+        # TODO: then take upper and lower parts to self.fc_i
+        pass
