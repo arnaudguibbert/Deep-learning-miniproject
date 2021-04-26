@@ -12,6 +12,7 @@ class Naive_net(nn.Module):
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
             nn.ReLU(),
             nn.BatchNorm2d(16),
+            nn.Dropout(),
             nn.Conv2d(16, 32, 3),
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
             nn.ReLU(),
@@ -33,24 +34,25 @@ class MnistCNN(nn.Module):
 
     def __init__(self):
         super().__init__()
+        self.activation = nn.ReLU()
         self.sequence = nn.Sequential(
             nn.Conv2d(1,32,kernel_size=(3,3)),
-            nn.ReLU(),
+            self.activation,
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
             nn.BatchNorm2d(32),
             
             nn.Conv2d(32,64,kernel_size=(3,3)),
-            nn.ReLU(),
+            self.activation,
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
             nn.BatchNorm2d(64),
 
             nn.Conv2d(64,128,kernel_size=(2,2)),
-            nn.ReLU(),
+            self.activation,
             nn.BatchNorm2d(128),
             
             nn.Flatten(),
             nn.Linear(128,64),
-            nn.ReLU(),
+            self.activation,
             nn.BatchNorm1d(64),
             nn.Linear(64,10)
         )
@@ -134,7 +136,7 @@ class oO_Net(nn.Module):
         self.weights_loss = [0.5,0.5]
         
         self.Mnist_part = MnistCNN().sequence[:15] # out shape = (N,64,2)
-        self.Naive_part = Naive_net().sequence[:9] # out shape = (N,128)
+        self.Naive_part = Naive_net().sequence[:10] # out shape = (N,128)
 
         self.post_mnist_sequence = nn.Sequential(
             nn.Linear(64,32),
