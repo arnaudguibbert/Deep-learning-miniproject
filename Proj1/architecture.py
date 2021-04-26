@@ -34,20 +34,20 @@ class MnistCNN(nn.Module):
     def __init__(self):
         super().__init__()
         self.sequence = nn.Sequential(
-            nn.Conv2d(1,64,kernel_size=(3,3)),
+            nn.Conv2d(1,32,kernel_size=(3,3)),
             nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
+            nn.BatchNorm2d(32),
+            
+            nn.Conv2d(32,64,kernel_size=(3,3)),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
             nn.BatchNorm2d(64),
-            nn.Conv2d(64,128,kernel_size=(3,3)),
+
+            nn.Conv2d(64,128,kernel_size=(2,2)),
             nn.ReLU(),
             nn.BatchNorm2d(128),
-            nn.Conv2d(128,128,kernel_size=(3,3)),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
-            nn.BatchNorm2d(128),
-            nn.Conv2d(128,128,kernel_size=(3,3)),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
-            nn.BatchNorm2d(128),
+            
             nn.Flatten(),
             nn.Linear(128,64),
             nn.ReLU(),
@@ -133,7 +133,7 @@ class oO_Net(nn.Module):
         self.target_type = ["target0","target1"]
         self.weights_loss = [0.5,0.5]
         
-        self.Mnist_part = MnistCNN().sequence[:18] # out shape = (N,64,2)
+        self.Mnist_part = MnistCNN().sequence[:15] # out shape = (N,64,2)
         self.Naive_part = Naive_net().sequence[:9] # out shape = (N,128)
 
         self.post_mnist_sequence = nn.Sequential(
@@ -147,14 +147,14 @@ class oO_Net(nn.Module):
             nn.Linear(128,64),
             nn.ReLU(),
             nn.BatchNorm1d(64),
-            nn.Linear(64,2)
+            nn.Linear(64,4)
         )
         
         self.lower_last_sequence = nn.Sequential(
-            nn.Linear(22,11),
+            nn.Linear(24,12),
             nn.ReLU(),
-            nn.BatchNorm1d(11),
-            nn.Linear(11,2)
+            nn.BatchNorm1d(12),
+            nn.Linear(12,2)
         )
         
     def forward(self,input):
