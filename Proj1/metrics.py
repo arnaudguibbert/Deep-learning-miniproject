@@ -6,6 +6,7 @@ import pandas as pd
 import seaborn as sns
 from time import perf_counter
 from dlc_practical_prologue import generate_pair_sets
+import torchvision.transforms as transform
 
 
 def train_model(model, train_input, train_target, train_classes,
@@ -107,6 +108,23 @@ class Cross_validation():
         self.steps = steps # Get Granularity for the graphs
         # Row format for the logs
         self.row_format = '{:<20}{:<15}{:<25}{:<25}{:<15}' # Define the display format
+        #store it to see plot where the model fail, random initialisation
+        self.img_errors = torch.empty(2,3)
+
+        
+
+    def data_augmentation(self,train_input):
+        """
+        Augment the data by :Random tilt between [-30,30] degree and RandomErasing 
+        p – probability that the random erasing operation will be performed.
+        scale – range of proportion of erased area against input image.
+        ratio – range of aspect ratio of erased area.
+        """
+        rotation=transform.RandomRotation((-20,20))
+        erasing=transform.RandomErasing(p=0.3, scale=(0.025, 0.025), ratio=(1, 1))
+        tilted_train=rotation(train_input)
+        train_input_augmented=erasing(tilted_train)
+        return train_input_augmented
 
     def split_data(self,nb_classes=10):
         """
@@ -160,11 +178,20 @@ class Cross_validation():
             else :
                 main_output=output
             _,predicted = torch.max(main_output,dim=1) # Compute the prediction
+            #compute the error matrix
+            errors_matrix=torch.where(target != predicted,1,0)
             # Compute the number of errors
-            errors = torch.where(target != predicted,1,0).sum().item()
+            errors = errors_matrix.sum().item()
+            #store the wrong set of image
+            errors_index=((errors_matrix == 1).nonzero(as_tuple=True)[0])
+            self.img_errors=input[errors_index]
             # Compute the accuracy
             accuracy = (1 - errors/(target.shape[0]))*100
         return accuracy
+
+    def get_errors(self):
+
+        return self.img_errors
 
     def run_one(self,archi_name):
         """
@@ -191,6 +218,10 @@ class Cross_validation():
             # Extract this
             train_input, train_target, train_classes = data[0], data[1], data[2]
             test_input, test_target, _ = data[3], data[4], data[5]
+
+            #augment the data
+            #train_input=self.data_augmentation(train_input)
+
             # Create the model
             model = Myclass(*args)
             # The data to add to the data frame will be stored in this tensor
