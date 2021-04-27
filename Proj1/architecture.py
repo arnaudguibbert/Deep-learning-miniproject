@@ -60,9 +60,62 @@ class MnistCNN(nn.Module):
     def forward(self,input):
         output = self.sequence(input)
         return output
+    
+class ResBlock(nn.Module):
+    
+    def __init__(self,nb_channels,kernel_size):
+        super().__init__()     
+        self.conv1 = nn.Conv2d(nb_channels, nb_channels, kernel_size,
+        padding = (kernel_size-1)//2)
+        self.bn1 = nn.BatchNorm2d(nb_channels)
+        self.conv2 = nn.Conv2d(nb_channels, nb_channels, kernel_size,
+        padding = (kernel_size-1)//2)
+        self.bn2 = nn.BatchNorm2d(nb_channels)
+        
+    def forward(self, x):
+        y = self.bn1(self.conv1(x))
+        y = F.relu(y)
+        y = self.bn2(self.conv2(y))
+        y += x
+        y = F.relu(y)
+        return y
+        
+class MnistResNet(nn.Module):
+    """ResNet for MNIST with the following architecture:
+    1x14x14 -> (conv) 32x11x11 -> (conv) 16x8x8
+    -> (resblocks) 16x8x8 -> (maxpool) 16x4x4 -> (conv) 16x2x2
+    -> (flatten) 64 -> (fc) 10
+    Some dropout can/should be added rather at the end of the net
+    """
+    
+    def __init__(self, nb_blocks=2):
+        super().__init__()
+        self.nb_blocks = nb_blocks
+        self.sequence = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size = 4),
+            nn.ReLU(),
+            nn.BatchNorm2d(32),
+            nn.Conv2d(32, 16, kernel_size = 4),
+            nn.ReLU(),
+            nn.BatchNorm2d(16),
+            *(ResBlock(nb_channels=16, kernel_size=3) for _ in range(self.nb_blocks)),
+            nn.Dropout(),
+            nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
+            nn.BatchNorm2d(16),
+            nn.Conv2d(16,16,3),
+            nn.ReLU(),
+            nn.BatchNorm2d(16),
+            nn.Flatten(),
+            nn.Linear(64, 10)
+        )
+    
+    def forward(self, input):
+        output = self.sequence(input)
+        return ouput
+        
 
 class Simple_Net(nn.Module):
-	
+
     def __init__(self):
         super().__init__()
         self.sequence = nn.Sequential(
@@ -130,12 +183,17 @@ class CrossArchitecture(nn.Module):
 
 class oO_Net(nn.Module):
     
-    def __init__(self):
+    def __init__(self, use_MnistResNet=False):
         super().__init__()
         self.target_type = ["target0","target1"]
         self.weights_loss = [0.5,0.5]
         
-        self.Mnist_part = MnistCNN().sequence[:15] # out shape = (N,64,2)
+        if use_MnistResNet:
+            nb_blocks = MnistResNet().nb_blocks
+            self.Mnist_part = MnistResNet().sequence[:13+nb_blocks] # out shape = (N,64,2)
+        else:
+            self.Mnist_part = MnistCNN().sequence[:15] # out shape = (N,64,2)
+            
         self.Naive_part = Naive_net().sequence[:10] # out shape = (N,128)
 
         self.post_mnist_sequence = nn.Sequential(
