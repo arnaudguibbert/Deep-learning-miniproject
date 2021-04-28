@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import pandas as pd
 import seaborn as sns
+import numpy as np
 from time import perf_counter
 from dlc_practical_prologue import generate_pair_sets
 import torchvision.transforms as transform
@@ -96,6 +97,7 @@ class Cross_validation():
         self.columns = ["run_id","architecture","accuracy","type","epochs"]
         # Create the data frames
         self.columns_time = ["architecture","time","run_id"]
+        self.parameters_count = self.count_params()
         self.datatime = pd.DataFrame([[1e20,1e20,1e20]],columns=self.columns_time)
         self.dataframe = pd.DataFrame([[1e20,1e20,1e20,1e20,1e20]],columns=self.columns)
         # Load the the data set
@@ -111,7 +113,24 @@ class Cross_validation():
         #store it to see plot where the model fail, random initialisation
         self.img_errors = torch.empty(2,3)
 
-        
+    def count_params(self):
+        """
+        Goal:
+        Count the number of parameters to be trained for each model. 
+        Inputs:
+        Outputs:
+        param_count = list of size = number of architectures
+                      Store the number of parameters for each model
+        """
+        param_count = []
+        for i,archi in enumerate(self.architectures):
+            model = archi(*self.args[i])
+            n_params = 0
+            with torch.no_grad():
+                for params in model.parameters():
+                    n_params += params.numel()
+            param_count.append(n_params)
+        return param_count
 
     def data_augmentation(self,train_input):
         """
@@ -169,13 +188,14 @@ class Cross_validation():
         Outputs:
         accuracy = float - Accuracy in percentage 
         """
+        model.eval()
         with torch.no_grad(): # Shut down the autograd machinery
             output = model(input) # Compute the output of the model
             # If the model has auxiliary output
             if len(model.target_type) > 1: 
                  # Let's take the real one (by convention the first returned)
                 main_output = output[0] 
-            else :
+            else:
                 main_output=output
             _,predicted = torch.max(main_output,dim=1) # Compute the prediction
             #compute the error matrix
@@ -187,10 +207,10 @@ class Cross_validation():
             self.img_errors=input[errors_index]
             # Compute the accuracy
             accuracy = (1 - errors/(target.shape[0]))*100
+        model.train()
         return accuracy
 
     def get_errors(self):
-
         return self.img_errors
 
     def run_one(self,archi_name):
@@ -212,20 +232,17 @@ class Cross_validation():
         Myclass = self.architectures[index]
         # Get the arguments
         args = self.args[index]
+        # The data to add to the data frame will be stored in this tensor
+        new_data_time = torch.zeros(len(self.columns_time)).view(1,-1)
+        new_data = torch.zeros(len(self.columns)).view(1,-1)
         for runs in range(self.runs): # Repeat runs times
             # Get a random data set of 1000 samples for training, same for testing 
             data = self.split_data() 
             # Extract this
             train_input, train_target, train_classes = data[0], data[1], data[2]
             test_input, test_target, _ = data[3], data[4], data[5]
-
-            #augment the data
-            #train_input=self.data_augmentation(train_input)
-
             # Create the model
             model = Myclass(*args)
-            # The data to add to the data frame will be stored in this tensor
-            new_data = torch.zeros(len(self.columns)).view(1,-1)
             # Compute the initial accuracy 
             accuracy_train = self.accuracy(model,train_input,train_target)
             accuracy_test = self.accuracy(model,test_input,test_target)
@@ -233,7 +250,6 @@ class Cross_validation():
             row_test = torch.tensor([runs,index,accuracy_test,1,0]).view(1,-1)
             row_train = torch.tensor([runs,index,accuracy_train,0,0]).view(1,-1)
             new_data = torch.cat((new_data,row_train,row_test),dim=0)
-            new_data_time = torch.zeros(len(self.columns_time)).view(1,-1)
             # Train the model and record the accuracy each self.steps epochs
             start = perf_counter() # Start the chrono
             for step in range(self.steps,self.epochs,self.steps):
@@ -417,6 +433,47 @@ class Cross_validation():
         ax.legend(handles,labels,fontsize=13)
         ax.set_title(title,fontsize=13)
 
+    def plot_count_param(self,figure,subplot):
+        """
+        Goal:
+        Plot a barplot of the number of parameters of each model
+        Inputs:
+        figure = matplotlib figure - figure where the boxplot will be plotted
+        subplot = list of size 3 - location of the boxplot in the figure
+        Outputs:
+        """
+        # Set the style
+        sns.set_style("darkgrid")
+        col1 = "Number of parameters"
+        cols = [col1,"Architectures"]
+        # Data to be plotted
+        data = np.array([self.parameters_count,self.archi_names]).T
+        df = pd.DataFrame(data,columns=cols)
+        # Convert to numeric
+        df[col1] = pd.to_numeric(df[col1])
+        ax = figure.add_subplot(*subplot) # Define the ax
+        # Plot the graph
+        sns.barplot(data=df,x="Architectures",y="Number of parameters",ax=ax)
+        ax.set_xlabel("Architectures",fontsize=13)
+        ax.set_ylabel(col1,fontsize=13)
+
+    def plot_time_comparison(self,figure,subplot):
+        """
+        Goal:
+        Plot the boxplot of the training time for each model
+        Inputs:
+        figure = matplotlib figure - figure where the boxplot will be plotted
+        subplot = list of size 3 - location of the boxplot in the figure
+        """
+        # Set the style
+        sns.set_style("darkgrid")
+        ax = figure.add_subplot(*subplot) # Define the ax
+        # Plot the boxplot
+        sns.boxplot(data=self.datatime,x="architecture",y="time",ax=ax)
+        ax.set_xlabel("Architectures",fontsize=13)
+        ax.set_ylabel("Training time [s]",fontsize=13)
+
+
     def plot_full_comparison(self):
         """
         Goal:
@@ -428,11 +485,14 @@ class Cross_validation():
         Outputs:
         """
         # Create the figure
-        fig = plt.figure(figsize=[16,10])
+        fig = plt.figure(figsize=[16,14])
         # Plot the evolution on the train set
-        self.plot_evolution_all(fig,[2,2,1],test=False)
+        self.plot_evolution_all(fig,[3,3,(1,2)],test=False)
+        self.plot_count_param(fig,[3,3,3])
         # Plot the evolution on the test set
-        self.plot_evolution_all(fig,[2,2,2])
+        self.plot_evolution_all(fig,[3,3,(4,6)])
+        self.plot_time_comparison(fig,[3,3,9])
         # Plot the boxplot
-        self.plot_std(fig,[2,2,(3,4)])
+        self.plot_std(fig,[3,3,(7,8)])
+        plt.subplots_adjust(wspace=0.3,hspace=0.3)
         plt.show()
