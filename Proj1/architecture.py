@@ -8,13 +8,15 @@ class Naive_net(nn.Module):
     def __init__(self):
         super().__init__()
         self.sequence = nn.Sequential(
-            nn.Conv2d(2, 16, kernel_size=3),
+            nn.Conv2d(2, 32, kernel_size=3),
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
             nn.ReLU(),
-            nn.BatchNorm2d(16),
+            nn.BatchNorm2d(32),
             nn.Dropout(),
-            nn.Conv2d(16, 32, 3),
+
+            nn.Conv2d(32, 32, 3),
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
+            nn.Dropout(),
             nn.ReLU(),
             nn.BatchNorm2d(32),
             nn.Flatten(),
@@ -36,21 +38,30 @@ class MnistCNN(nn.Module):
         super().__init__()
         self.activation = nn.ReLU()
         self.sequence = nn.Sequential(
-            nn.Conv2d(1,32,kernel_size=(3,3)),
+            nn.Conv2d(1,96,kernel_size=(3,3)),
             self.activation,
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
-            nn.BatchNorm2d(32),
-            
-            nn.Conv2d(32,64,kernel_size=(3,3)),
-            self.activation,
-            nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
-            nn.BatchNorm2d(64),
+            nn.BatchNorm2d(96),
 
-            nn.Conv2d(64,128,kernel_size=(2,2)),
-            self.activation,
-            nn.BatchNorm2d(128),
+            nn.Dropout(),
             
+            nn.Conv2d(96,48,kernel_size=(3,3)),
+            self.activation,
+            nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
+            nn.BatchNorm2d(48),
+        
+            nn.Dropout(p=0.25),
+
+            nn.Conv2d(48,48,kernel_size=(2,2)),
+            self.activation,
+            nn.BatchNorm2d(48),
+            
+            nn.Dropout(p=0.25),
+
             nn.Flatten(),
+            nn.Linear(48,128),
+            self.activation,
+            nn.BatchNorm1d(128),
             nn.Linear(128,64),
             self.activation,
             nn.BatchNorm1d(64),
@@ -88,7 +99,7 @@ class MnistResNet(nn.Module):
     Some dropout can/should be added rather at the end of the net
     """
     
-    def __init__(self, nb_blocks=2):
+    def __init__(self, nb_blocks=3):
         super().__init__()
         self.nb_blocks = nb_blocks
         self.sequence = nn.Sequential(
@@ -125,23 +136,23 @@ class Simple_Net(nn.Module):
             nn.BatchNorm2d(64),
             nn.ReLU(),
             
-            nn.Conv2d(64,128,kernel_size=(3,3)), 
-            nn.BatchNorm2d(128),
+            nn.Conv2d(48,48,kernel_size=(3,3)), 
+            nn.BatchNorm2d(48),
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
             nn.ReLU(),
             
-            nn.Conv2d(128,128,kernel_size=(3,3)), 
+            nn.Conv2d(48,64,kernel_size=(3,3)), 
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+
+            nn.Conv2d(64,128,kernel_size=(1,1)), 
             nn.BatchNorm2d(128),
             nn.ReLU(),
 
-            nn.Conv2d(128,128,kernel_size=(1,1)), 
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-
-            nn.Conv2d(128,128,kernel_size=(3,3)), 
+            nn.Conv2d(128,64,kernel_size=(3,3)), 
             
             nn.Flatten(),
-            nn.Linear(128,64),
+            nn.Linear(64,64),
             nn.ReLU(),
             nn.BatchNorm1d(64),
             nn.Linear(64,10)
@@ -192,9 +203,9 @@ class oO_Net(nn.Module):
             nb_blocks = MnistResNet().nb_blocks
             self.Mnist_part = MnistResNet().sequence[:13+nb_blocks] # out shape = (N,64,2)
         else:
-            self.Mnist_part = MnistCNN().sequence[:15] # out shape = (N,64,2)
+            self.Mnist_part = MnistCNN().sequence[:21] # out shape = (N,64,2)
             
-        self.Naive_part = Naive_net().sequence[:10] # out shape = (N,128)
+        self.Naive_part = Naive_net().sequence[:11] # out shape = (N,128)
 
         self.post_mnist_sequence = nn.Sequential(
             nn.Linear(64,32),
