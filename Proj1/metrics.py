@@ -49,12 +49,12 @@ def train_model(model, train_input, train_target, train_classes,
                     if target == "target0":
                         # Compute the auxiliary loss
                         aux_loss = criterion(output[i], 
-                                                 train_target.narrow(0, b, mini_batch_size))
+                                             train_target.narrow(0, b, mini_batch_size))
                     # Target 1 means that the output predicts the classes of the images
                     elif target == "target1":
                         # Compute the auxiliary loss
                         aux_loss = criterion(output[i], 
-                                                 train_classes.narrow(0, b, mini_batch_size))
+                                             train_classes.narrow(0, b, mini_batch_size))
                     else:
                         # print Error message
                         return "Unexpected value in the attribute target_type"
@@ -111,7 +111,9 @@ class Cross_validation():
         # Row format for the logs
         self.row_format = '{:<20}{:<15}{:<25}{:<25}{:<15}' # Define the display format
         #store it to see plot where the model fail, random initialisation
-        self.img_errors = torch.empty(2,3)
+        self.errors_img = torch.empty(0,1) # torch.empty() marche aussi ?
+        self.errors_target = torch.empty(0,1)
+        self.errors_numbers = torch.empty(0,1)
 
     def count_params(self):
         """
@@ -134,16 +136,16 @@ class Cross_validation():
 
     def data_augmentation(self,train_input):
         """
-        Augment the data by :Random tilt between [-30,30] degree and RandomErasing 
+        Augment the data by :Random tilt between [-10,10] degree and RandomErasing 
         p – probability that the random erasing operation will be performed.
         scale – range of proportion of erased area against input image.
         ratio – range of aspect ratio of erased area.
         """
-        rotation=transform.RandomRotation((-20,20))
-        erasing=transform.RandomErasing(p=0.3, scale=(0.025, 0.025), ratio=(1, 1))
+        rotation=transform.RandomRotation((-10,10))
+        erasing=transform.RandomErasing(p=0.5, scale=(0.015, 0.015), ratio=(1, 1))
         tilted_train=rotation(train_input)
         train_input_augmented=erasing(tilted_train)
-        return train_input_augmented
+        return tilted_train
 
     def split_data(self,nb_classes=10):
         """
@@ -201,17 +203,22 @@ class Cross_validation():
             #compute the error matrix
             errors_matrix=torch.where(target != predicted,1,0)
             # Compute the number of errors
-            errors = errors_matrix.sum().item()
+            total_errors = errors_matrix.sum().item()
             #store the wrong set of image
             errors_index=((errors_matrix == 1).nonzero(as_tuple=True)[0])
-            self.img_errors=input[errors_index]
+            self.errors_img=input[errors_index]
+            self.errors_target=predicted[errors_index]
+
+            if len(model.target_type) > 1 and len(errors_index) != 0: 
+                #We can see the errors only if the model has it as output
+                self.errors_numbers=torch.argmax(output[1][errors_index],dim=1)
             # Compute the accuracy
-            accuracy = (1 - errors/(target.shape[0]))*100
+            accuracy = (1 - total_errors/(target.shape[0]))*100
         model.train()
         return accuracy
 
     def get_errors(self):
-        return self.img_errors
+        return self.errors_img, self.errors_target, self.errors_numbers
 
     def run_one(self,archi_name):
         """
@@ -241,6 +248,7 @@ class Cross_validation():
             # Extract this
             train_input, train_target, train_classes = data[0], data[1], data[2]
             test_input, test_target, _ = data[3], data[4], data[5]
+
             # Create the model
             model = Myclass(*args)
             # Compute the initial accuracy 
@@ -268,7 +276,7 @@ class Cross_validation():
                 new_data = torch.cat((new_data,row_train,row_test),dim=0)
             # Store into the new_data_time tensor
             end = perf_counter() # Stop the chrono
-            elapsed = (end - start)/self.steps # Compute the elapsed time
+            elapsed = (end - start) # Compute the elapsed time
             row_time = torch.tensor([index,elapsed,runs]).view(1,-1)
             new_data_time = torch.cat((new_data_time,row_time),dim=0)
             # Row to be displayed/logged
@@ -468,10 +476,11 @@ class Cross_validation():
         # Set the style
         sns.set_style("darkgrid")
         ax = figure.add_subplot(*subplot) # Define the ax
+        mean_data_time  = self.datatime.grouby(["architecture"]).mean()
         # Plot the boxplot
-        sns.boxplot(data=self.datatime,x="architecture",y="time",ax=ax)
+        sns.barplot(data=self.datatime,x="architecture",y="time",ax=ax)
         ax.set_xlabel("Architectures",fontsize=13)
-        ax.set_ylabel("Training time [s]",fontsize=13)
+        ax.set_ylabel("Average training time [s]",fontsize=13)
 
 
     def plot_full_comparison(self):
@@ -495,4 +504,20 @@ class Cross_validation():
         # Plot the boxplot
         self.plot_std(fig,[3,3,(7,8)])
         plt.subplots_adjust(wspace=0.3,hspace=0.3)
+        plt.show()
+
+    def plot_errors(self,error_index):
+
+        if (self.errors_target[error_index].item() == 1):
+            print('Model predicted first number greater than the second')
+        else :
+            print('Model predicted second number greater than the first')
+        #plot each number with associated prediction
+        fig, axs = plt.subplots(1, 2)
+        axs[0].set_title('first predicted number : {}'.format(self.errors_numbers[error_index,0]))
+        axs[0].imshow(self.errors_img[error_index,0,:,:], cmap='gray')
+        axs[0].axis('off')
+        axs[1].set_title('second predicted number : {}'.format(self.errors_numbers[error_index,1]))
+        axs[1].imshow(self.errors_img[error_index,1,:,:], cmap='gray')
+        axs[1].axis('off')
         plt.show()
