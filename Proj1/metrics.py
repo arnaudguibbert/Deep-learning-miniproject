@@ -49,12 +49,12 @@ def train_model(model, train_input, train_target, train_classes,
                     if target == "target0":
                         # Compute the auxiliary loss
                         aux_loss = criterion(output[i], 
-                                                 train_target.narrow(0, b, mini_batch_size))
+                                             train_target.narrow(0, b, mini_batch_size))
                     # Target 1 means that the output predicts the classes of the images
                     elif target == "target1":
                         # Compute the auxiliary loss
                         aux_loss = criterion(output[i], 
-                                                 train_classes.narrow(0, b, mini_batch_size))
+                                             train_classes.narrow(0, b, mini_batch_size))
                     else:
                         # print Error message
                         return "Unexpected value in the attribute target_type"
@@ -276,7 +276,7 @@ class Cross_validation():
                 new_data = torch.cat((new_data,row_train,row_test),dim=0)
             # Store into the new_data_time tensor
             end = perf_counter() # Stop the chrono
-            elapsed = (end - start)/self.steps # Compute the elapsed time
+            elapsed = (end - start) # Compute the elapsed time
             row_time = torch.tensor([index,elapsed,runs]).view(1,-1)
             new_data_time = torch.cat((new_data_time,row_time),dim=0)
             # Row to be displayed/logged
@@ -476,10 +476,11 @@ class Cross_validation():
         # Set the style
         sns.set_style("darkgrid")
         ax = figure.add_subplot(*subplot) # Define the ax
+        mean_data_time  = self.datatime.grouby(["architecture"]).mean()
         # Plot the boxplot
-        sns.boxplot(data=self.datatime,x="architecture",y="time",ax=ax)
+        sns.barplot(data=self.datatime,x="architecture",y="time",ax=ax)
         ax.set_xlabel("Architectures",fontsize=13)
-        ax.set_ylabel("Training time [s]",fontsize=13)
+        ax.set_ylabel("Average training time [s]",fontsize=13)
 
 
     def plot_full_comparison(self):
