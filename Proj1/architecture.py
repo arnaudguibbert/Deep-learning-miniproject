@@ -265,3 +265,70 @@ class oO_Net(nn.Module):
         output_down = self.lower_last_sequence(output_down)
         
         return output_down, output_up
+
+
+class Inside_block(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.sequence = nn.Sequential(
+            nn.Conv2d(2,2,kernel_size=(3,3),padding=(1,1)),
+            nn.BatchNorm2d(2),
+            nn.ReLU()
+        )
+
+    def forward(self,input):
+        output = self.sequence(input)
+        return output
+
+
+class LugiaNet(nn.Module):
+
+    def __init__(self,n_parrallel):
+        super().__init__()
+        self.target_type = ["target0","target1","target1"]
+        self.weights_loss = [0.5,0.25,0.25]
+        self.resblock = [Inside_block() for i in range(0,n_parrallel)]
+        self.Mnist = MnistCNN()
+        self.final_layer = nn.Linear(48,2)
+        self.Naive = Naive_net().sequence[:11]
+        self.post_naive_sequence = nn.Sequential(
+            nn.Linear(128,32),
+            nn.ReLU(),
+            nn.BatchNorm1d(32),
+            nn.Linear(32,4)
+        )
+
+    def forward(self,input):
+        output_res_list = [block(input) for block in self.resblock]
+        output_res = sum(output_res_list) + input 
+        output_Mnist = []
+        output_Naive = []
+        Branch = [input,output_res]
+
+        for out in Branch:
+            num1 = out[:,[0],:,:]
+            num2 = out[:,[1],:,:]
+            out_num1 = self.Mnist(num1).view(num1.shape[0],-1,1)
+            out_num2 = self.Mnist(num2).view(num2.shape[0],-1,1)
+            output_f_1 = torch.cat((out_num1,out_num2),dim=2) # shape = (N,10,2)
+            output_Mnist.append(output_f_1)
+
+            output_f_2 = self.Naive(out)
+            output_f_2 = self.post_naive_sequence(output_f_2)
+            output_Naive.append(output_f_2)
+        
+        out2 = output_Mnist[0]
+        out3 = output_Mnist[1]
+
+        output_Mnist = [out.view(out.shape[0],-1) for out in output_Mnist]
+        full_output = torch.cat(output_Mnist + output_Naive,dim=1)
+        out1 = self.final_layer(full_output)
+        return out1, out2, out3
+
+
+
+
+
+
+
