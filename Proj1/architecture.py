@@ -45,14 +45,20 @@ class MnistCNN(nn.Module):
 
             nn.Dropout(p=0.65),
             
-            nn.Conv2d(96,48,kernel_size=(3,3)),
+            nn.Conv2d(96,48,kernel_size=(2,2)),
+            self.activation,
+            nn.BatchNorm2d(48),
+
+            nn.Dropout(p=0.25),
+
+            nn.Conv2d(48,32,kernel_size=(2,2)),
             self.activation,
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
-            nn.BatchNorm2d(48),
+            nn.BatchNorm2d(32),
         
             nn.Dropout(p=0.25),
 
-            nn.Conv2d(48,64,kernel_size=(2,2)),
+            nn.Conv2d(32,64,kernel_size=(2,2)),
             self.activation,
             nn.BatchNorm2d(64),
             
@@ -204,7 +210,7 @@ class oO_Net(nn.Module):
             nb_blocks = MnistResNet().nb_blocks
             self.Mnist_part = MnistResNet().sequence[:13+nb_blocks] # out shape = (N,64,2)
         else:
-            self.Mnist_part = MnistCNN().sequence[:21] # out shape = (N,64,2)
+            self.Mnist_part = MnistCNN().sequence[:24] # out shape = (N,64,2)
             
         self.Naive_part = Naive_net().sequence[:11] # out shape = (N,128)
 
