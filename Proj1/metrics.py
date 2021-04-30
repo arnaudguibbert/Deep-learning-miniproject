@@ -476,9 +476,10 @@ class Cross_validation():
         # Set the style
         sns.set_style("darkgrid")
         ax = figure.add_subplot(*subplot) # Define the ax
-        mean_data_time  = self.datatime.grouby(["architecture"]).mean()
+        mean_data_time  = self.datatime.groupby(["architecture"]).mean()
+        mean_data_time = mean_data_time.reset_index()
         # Plot the boxplot
-        sns.barplot(data=self.datatime,x="architecture",y="time",ax=ax)
+        sns.barplot(data=mean_data_time,x="architecture",y="time",ax=ax)
         ax.set_xlabel("Architectures",fontsize=13)
         ax.set_ylabel("Average training time [s]",fontsize=13)
 
@@ -496,14 +497,14 @@ class Cross_validation():
         # Create the figure
         fig = plt.figure(figsize=[16,14])
         # Plot the evolution on the train set
-        self.plot_evolution_all(fig,[3,3,(1,2)],test=False)
-        self.plot_count_param(fig,[3,3,3])
+        self.plot_evolution_all(fig,[3,5,(1,3)],test=False)
+        self.plot_count_param(fig,[3,5,(4,5)])
         # Plot the evolution on the test set
-        self.plot_evolution_all(fig,[3,3,(4,6)])
-        self.plot_time_comparison(fig,[3,3,9])
+        self.plot_evolution_all(fig,[3,5,(6,10)])
+        self.plot_time_comparison(fig,[3,5,(14,15)])
         # Plot the boxplot
-        self.plot_std(fig,[3,3,(7,8)])
-        plt.subplots_adjust(wspace=0.3,hspace=0.3)
+        self.plot_std(fig,[3,5,(11,13)])
+        plt.subplots_adjust(wspace=0.5,hspace=0.3)
         plt.show()
 
     def plot_errors(self,error_index):
