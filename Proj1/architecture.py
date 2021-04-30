@@ -8,13 +8,13 @@ class Naive_net(nn.Module):
     def __init__(self):
         super().__init__()
         self.sequence = nn.Sequential(
-            nn.Conv2d(2, 32, kernel_size=3),
+            nn.Conv2d(2, 48, kernel_size=3),
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
             nn.ReLU(),
-            nn.BatchNorm2d(32),
+            nn.BatchNorm2d(48),
             nn.Dropout(),
 
-            nn.Conv2d(32, 32, 3),
+            nn.Conv2d(48, 32, 3),
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
             nn.Dropout(),
             nn.ReLU(),
@@ -43,25 +43,32 @@ class MnistCNN(nn.Module):
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
             nn.BatchNorm2d(96),
 
-            nn.Dropout(),
+            nn.Dropout(p=0.65),
             
-            nn.Conv2d(96,48,kernel_size=(3,3)),
+            nn.Conv2d(96,48,kernel_size=(2,2)),
+            self.activation,
+            nn.BatchNorm2d(48),
+
+            nn.Dropout(p=0.25),
+
+            nn.Conv2d(48,32,kernel_size=(2,2)),
             self.activation,
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
-            nn.BatchNorm2d(48),
+            nn.BatchNorm2d(32),
         
             nn.Dropout(p=0.25),
 
-            nn.Conv2d(48,48,kernel_size=(2,2)),
+            nn.Conv2d(32,64,kernel_size=(2,2)),
             self.activation,
-            nn.BatchNorm2d(48),
+            nn.BatchNorm2d(64),
             
             nn.Dropout(p=0.25),
 
             nn.Flatten(),
-            nn.Linear(48,128),
+            nn.Linear(64,128),
             self.activation,
             nn.BatchNorm1d(128),
+            
             nn.Linear(128,64),
             self.activation,
             nn.BatchNorm1d(64),
@@ -203,22 +210,22 @@ class oO_Net(nn.Module):
             nb_blocks = MnistResNet().nb_blocks
             self.Mnist_part = MnistResNet().sequence[:13+nb_blocks] # out shape = (N,64,2)
         else:
-            self.Mnist_part = MnistCNN().sequence[:21] # out shape = (N,64,2)
+            self.Mnist_part = MnistCNN().sequence[:24] # out shape = (N,64,2)
             
         self.Naive_part = Naive_net().sequence[:11] # out shape = (N,128)
 
         self.post_mnist_sequence = nn.Sequential(
-            nn.Linear(64,32),
+            nn.Linear(64,64),
             nn.ReLU(),
-            nn.BatchNorm1d(32),
-            nn.Linear(32,10)
+            nn.BatchNorm1d(64),
+            nn.Linear(64,10)
         )
         
         self.post_naive_sequence = nn.Sequential(
-            nn.Linear(128,64),
+            nn.Linear(128,32),
             nn.ReLU(),
-            nn.BatchNorm1d(64),
-            nn.Linear(64,4)
+            nn.BatchNorm1d(32),
+            nn.Linear(32,4)
         )
         
         self.lower_last_sequence = nn.Sequential(

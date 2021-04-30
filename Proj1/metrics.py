@@ -114,6 +114,7 @@ class Cross_validation():
         self.errors_img = torch.empty(0,1) # torch.empty() marche aussi ?
         self.errors_target = torch.empty(0,1)
         self.errors_numbers = torch.empty(0,1)
+        self.right_target = torch.empty(0,1)
 
     def count_params(self):
         """
@@ -178,7 +179,7 @@ class Cross_validation():
         test_classes = self.test_classes[index]
         return train_input, train_target, train_classes ,test_input ,test_target ,test_classes
 
-    def accuracy(self,model,input,target):
+    def accuracy(self,model,input,target,target_classes):
         """
         Goal:
         Compute the accuracy of a model on a given data set
@@ -187,6 +188,7 @@ class Cross_validation():
                 input of the model
         target = tensor - size (N) N number of samples
                  targets - belongs to {0,1}
+        target_classes = tensor - size (Nx2)
         Outputs:
         accuracy = float - Accuracy in percentage 
         """
@@ -205,6 +207,7 @@ class Cross_validation():
             # Compute the number of errors
             total_errors = errors_matrix.sum().item()
             #store the wrong set of image
+            errors_index=torch.empty(0,1)
             errors_index=((errors_matrix == 1).nonzero(as_tuple=True)[0])
             self.errors_img=input[errors_index]
             self.errors_target=predicted[errors_index]
@@ -212,6 +215,7 @@ class Cross_validation():
             if len(model.target_type) > 1 and len(errors_index) != 0: 
                 #We can see the errors only if the model has it as output
                 self.errors_numbers=torch.argmax(output[1][errors_index],dim=1)
+                self.right_target=target_classes[errors_index]
             # Compute the accuracy
             accuracy = (1 - total_errors/(target.shape[0]))*100
         model.train()
@@ -247,13 +251,13 @@ class Cross_validation():
             data = self.split_data() 
             # Extract this
             train_input, train_target, train_classes = data[0], data[1], data[2]
-            test_input, test_target, _ = data[3], data[4], data[5]
+            test_input, test_target, test_classes = data[3], data[4], data[5]
 
             # Create the model
             model = Myclass(*args)
             # Compute the initial accuracy 
-            accuracy_train = self.accuracy(model,train_input,train_target)
-            accuracy_test = self.accuracy(model,test_input,test_target)
+            accuracy_train = self.accuracy(model,train_input,train_target,train_classes)
+            accuracy_test = self.accuracy(model,test_input,test_target,test_classes)
             # Store it into the new_data tensor
             row_test = torch.tensor([runs,index,accuracy_test,1,0]).view(1,-1)
             row_train = torch.tensor([runs,index,accuracy_train,0,0]).view(1,-1)
@@ -268,8 +272,8 @@ class Cross_validation():
                             train_classes, 
                             nb_epochs=self.steps)
                 # Compute the accuracy on the train and test set
-                accuracy_train = self.accuracy(model,train_input,train_target)
-                accuracy_test = self.accuracy(model,test_input,test_target)
+                accuracy_train = self.accuracy(model,train_input,train_target,train_classes)
+                accuracy_test = self.accuracy(model,test_input,test_target,test_classes)
                 # Store is into the new_data tensor
                 row_test = torch.tensor([runs,index,accuracy_test,1,step]).view(1,-1)
                 row_train = torch.tensor([runs,index,accuracy_train,0,step]).view(1,-1)
@@ -510,15 +514,16 @@ class Cross_validation():
     def plot_errors(self,error_index):
 
         if (self.errors_target[error_index].item() == 1):
-            print('Model predicted first number greater than the second')
+            print('Model predicted right number greater than the left')
         else :
-            print('Model predicted second number greater than the first')
+            print('Model predicted left number greater than the right')
         #plot each number with associated prediction
         fig, axs = plt.subplots(1, 2)
-        axs[0].set_title('first predicted number : {}'.format(self.errors_numbers[error_index,0]))
+        axs[0].set_title('predicted : {0}, True label : {1} ||'.format(self.errors_numbers[error_index,0],self.right_target[error_index,0]))
         axs[0].imshow(self.errors_img[error_index,0,:,:], cmap='gray')
         axs[0].axis('off')
-        axs[1].set_title('second predicted number : {}'.format(self.errors_numbers[error_index,1]))
+        axs[1].set_title('predicted number : {0}, True label : {1}'.format(self.errors_numbers[error_index,1],self.right_target[error_index,1]))
         axs[1].imshow(self.errors_img[error_index,1,:,:], cmap='gray')
         axs[1].axis('off')
+        fig.tight_layout(pad=3.0)
         plt.show()
