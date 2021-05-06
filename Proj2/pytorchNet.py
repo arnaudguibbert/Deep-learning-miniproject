@@ -36,3 +36,30 @@ def train_pytorch_model(model,train_inputs,train_targets,
             model.zero_grad()
             loss.backward()
             optimizer.step()
+
+def generate_images(train_set,train_target,
+                    model,model_torch,steps,
+                    epochs,folder="figures"):
+    X = torch.linspace(0,1,1000)
+    Y = torch.linspace(0,1,1000)
+    grid_x, grid_y = torch.meshgrid(X,Y)
+    grid_x_vector = grid_x.reshape(-1,1)
+    grid_y_vector = grid_y.reshape(-1,1)
+    inputs = torch.cat((grid_x_vector,grid_y_vector),dim=1)
+    for nb_epochs in range(steps,epochs+1,steps):
+        train_model(model,train_set,train_target,epochs=steps)
+        train_pytorch_model(model_torch,train_set,train_target,epochs=steps)
+        predicted = model.forward(inputs,no_grad=True)
+        predicted = predicted.reshape(grid_x.shape[0],-1)
+        with torch.no_grad():
+            predicted_torch = model_torch(inputs)
+            predicted_torch = predicted_torch.reshape(grid_x.shape[0],-1)
+        fig = plt.figure(figsize=[16,7])
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+        ax1.contourf(grid_x,grid_y,predicted)
+        ax2.contourf(grid_x,grid_y,predicted_torch)
+        ax1.set_title("Our framework")
+        ax2.set_title("Pytorch")
+        fig.suptitle(str(nb_epochs) + " epochs")
+        fig.savefig(folder + "/epochs" + str(nb_epochs) + ".jpg", dpi=250)
