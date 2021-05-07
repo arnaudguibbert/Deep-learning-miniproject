@@ -89,8 +89,16 @@ class Cross_validation():
         Outputs:
         """
         self.architectures = architectures # Get the list of architectures
-        # Store the name of the architectures
-        self.archi_names = [archi.__name__ for archi in self.architectures]
+        self.archi_names = [] # Store the name of the architectures
+        for i,archi in enumerate(architectures):
+            name = archi.__name__
+            if len(args[i]) > 0:
+                name += " ("
+                for arg in args[i]:
+                    name += str(arg) + ","
+                name = name[:-1]
+                name += ")"
+            self.archi_names.append(name)
         self.args = args # Get the arguments for each architecture
         self.runs = runs # Number of runs
         # Columns of the data frame where all the data will be stored (will be used for the graphs)
@@ -108,6 +116,7 @@ class Cross_validation():
         self.train_input, self.train_target, self.train_classes = data[0], data[1], data[2]
         self.test_input, self.test_target, self.test_classes = data[3], data[4], data[5]
         self.steps = steps # Get Granularity for the graphs
+        self.ratio_valid = 0.4
         # Row format for the logs
         self.row_format = '{:<20}{:<15}{:<25}{:<25}{:<15}' # Define the display format
         #store it to see plot where the model fail, random initialisation
@@ -148,7 +157,7 @@ class Cross_validation():
         train_input_augmented=erasing(tilted_train)
         return tilted_train
 
-    def split_data(self,nb_classes=10):
+    def split_data(self,nb_classes=10,test=False):
         """
         To be modified to take into account the classes
         Goal:
@@ -161,22 +170,28 @@ class Cross_validation():
                        targets - belongs to {0,1}
         train_classes = tensor - size (1000x2)
                         Classes (i.e. numbers) of the two images - belongs to {1,...,10}
-        test_input = tensor - size (1000x2x14x14)
-                      input of the testing datas
-        test_target = tensor - size (1000)
+        validation_input = tensor - size (1000x2x14x14)
+                      input of the validation datas
+        validation_target = tensor - size (1000)
                        targets - belongs to {0,1}
-        test_classes = tensor - size (1000x2)
+        validation_classes = tensor - size (1000x2)
                         Classes (i.e. numbers) of the two images - belongs to {1,...,10}
         """
-        
         shuffle = torch.randperm(self.train_input.shape[0])
-        index = shuffle[:self.size]
-        train_input = self.train_input[index]
-        train_target = self.train_target[index]
-        train_classes = self.train_classes[index]
-        test_input = self.test_input[index]
-        test_target = self.test_target[index]
-        test_classes = self.test_classes[index]
+        index_train = shuffle[:self.size]
+        train_input = self.train_input[index_train]
+        train_target = self.train_target[index_train]
+        train_classes = self.train_classes[index_train]
+        if not test:
+            index_test = shuffle[-round(self.ratio_valid*self.size):]
+            test_input = self.train_input[index_test]
+            test_target = self.train_target[index_test]
+            test_classes = self.train_classes[index_test]
+        else:
+            index_test = index_train
+            test_input = self.test_input[index_test]
+            test_target = self.test_target[index_test]
+            test_classes = self.test_classes[index_test]
         return train_input, train_target, train_classes ,test_input ,test_target ,test_classes
 
     def accuracy(self,model,input,target,target_classes):
@@ -200,18 +215,17 @@ class Cross_validation():
                  # Let's take the real one (by convention the first returned)
                 main_output = output[0] 
             else:
-                main_output=output
+                main_output = output
             _,predicted = torch.max(main_output,dim=1) # Compute the prediction
             #compute the error matrix
-            errors_matrix=torch.where(target != predicted,1,0)
+            errors_matrix = torch.where(target != predicted,1,0)
             # Compute the number of errors
             total_errors = errors_matrix.sum().item()
             #store the wrong set of image
-            errors_index=torch.empty(0,1)
-            errors_index=((errors_matrix == 1).nonzero(as_tuple=True)[0])
-            self.errors_img=input[errors_index]
-            self.errors_target=predicted[errors_index]
-
+            errors_index = torch.empty(0,1)
+            errors_index = ((errors_matrix == 1).nonzero(as_tuple=True)[0])
+            self.errors_img = input[errors_index]
+            self.errors_target = predicted[errors_index]
             if len(model.target_type) > 1 and len(errors_index) != 0: 
                 #We can see the errors only if the model has it as output
                 self.errors_numbers=torch.argmax(output[1][errors_index],dim=1)
@@ -224,7 +238,7 @@ class Cross_validation():
     def get_errors(self):
         return self.errors_img, self.errors_target, self.errors_numbers
 
-    def run_one(self,archi_name):
+    def run_one(self,archi_name,test=False):
         """
         Goal:
         Train a model generated by the architecture "archi_name" "self.runs" times.
@@ -232,8 +246,14 @@ class Cross_validation():
         the performances are recorded each "self.step" epochs
         Inputs:
         archi_name = name of the architecture (i.e. name of the class)
+        test = Boolean - are you validating hyperparameters or perform a final test 
+               on the testing data
         Outputs:
         """
+        if test:
+            type_perf = 2
+        else:
+            type_perf = 1
         # Check that the name of the architectures is defined
         if not archi_name in self.archi_names:
             return "Unexpected value for archi_name"
@@ -248,18 +268,17 @@ class Cross_validation():
         new_data = torch.zeros(len(self.columns)).view(1,-1)
         for runs in range(self.runs): # Repeat runs times
             # Get a random data set of 1000 samples for training, same for testing 
-            data = self.split_data() 
+            data = self.split_data(test=test)
             # Extract this
             train_input, train_target, train_classes = data[0], data[1], data[2]
             test_input, test_target, test_classes = data[3], data[4], data[5]
-
             # Create the model
             model = Myclass(*args)
             # Compute the initial accuracy 
             accuracy_train = self.accuracy(model,train_input,train_target,train_classes)
             accuracy_test = self.accuracy(model,test_input,test_target,test_classes)
             # Store it into the new_data tensor
-            row_test = torch.tensor([runs,index,accuracy_test,1,0]).view(1,-1)
+            row_test = torch.tensor([runs,index,accuracy_test,type_perf,0]).view(1,-1)
             row_train = torch.tensor([runs,index,accuracy_train,0,0]).view(1,-1)
             new_data = torch.cat((new_data,row_train,row_test),dim=0)
             # Train the model and record the accuracy each self.steps epochs
@@ -275,7 +294,7 @@ class Cross_validation():
                 accuracy_train = self.accuracy(model,train_input,train_target,train_classes)
                 accuracy_test = self.accuracy(model,test_input,test_target,test_classes)
                 # Store is into the new_data tensor
-                row_test = torch.tensor([runs,index,accuracy_test,1,step]).view(1,-1)
+                row_test = torch.tensor([runs,index,accuracy_test,type_perf,step]).view(1,-1)
                 row_train = torch.tensor([runs,index,accuracy_train,0,step]).view(1,-1)
                 new_data = torch.cat((new_data,row_train,row_test),dim=0)
             # Store into the new_data_time tensor
@@ -300,7 +319,7 @@ class Cross_validation():
         self.datatime = self.datatime.append(df_time,ignore_index=True)
         self.remove_line()
 
-    def run_all(self):
+    def run_all(self,test=False):
         """
         Goal:
         For each architecture : 
@@ -311,13 +330,17 @@ class Cross_validation():
         Outputs:
         """
         # Header to be displayed
-        header = ["Architecture","Runs","Accuracy Train","Accuracy Test","Time"]
+        if test:
+            accu_header = "Accuracy Test"
+        else:
+            accu_header = "Accuracy Validation"
+        header = ["Architecture","Runs","Accuracy Train",accu_header,"Time"]
         under_header = ["-"*len(word) for word in header]
         print(self.row_format.format(*header)) # Print the header
         print(self.row_format.format(*under_header)) # Print the the under_header
         # For each architecture
         for archi_name in self.archi_names:
-            self.run_one(archi_name)
+            self.run_one(archi_name,test=test)
 
     def remove_line(self):
         """
@@ -341,7 +364,7 @@ class Cross_validation():
         self.dataframe = pd.DataFrame([[1e20,1e20,1e20,1e20,1e20]],columns=self.columns)
         self.datatime = pd.DataFrame([[1e20,1e20,1e20]],columns=self.columns_time)
     
-    def plot_std(self,figure,subplot):
+    def plot_std(self,figure,subplot,test=False):
         """
         Goal:
         Boxplot - Plot the standard deviations of the performances of each
@@ -363,52 +386,59 @@ class Cross_validation():
         # Get the performances after being trained with max_epochs
         std_data = self.dataframe.query("epochs == " + str(max_epochs))
         # Plot the graph
+        if test:
+            std_data = std_data.query("type != 1")
+        else:
+            std_data = std_data.query("type != 2")
         sns.boxplot(data=std_data,x="architecture",y="accuracy",hue="type")
         # Get the lines and labels of the graphs
         handles, labels = ax.get_legend_handles_labels()
         # Replace number by real labels
-        labels = ["test"*(label == '1.0') + "train"*(label == '0.0') for label in labels]
+        labels = ["test"*(label == '2.0') + "train"*(label == '0.0') + "validation"*(label == '1.0') for label in labels]
         # Display label information
-        ax.legend(handles,labels,fontsize=13)
+        ax.legend(handles,labels,fontsize=12)
+        xlabels = ax.get_xticklabels()
+        xlabels = [self.archi_names[int(float(label.get_text()))] for label in xlabels]
+        ax.set_xticklabels(xlabels,fontsize=13)
         ax.set_title(title,fontsize=13)
         ax.set_xticklabels(self.archi_names,fontsize=13)
         ax.set_xlabel("Architectures",fontsize=13)
         ax.set_ylabel("Accuracy",fontsize=13)
 
-    def plot_evolution(self,archi_name,figure,subplot,fontsize=13):
-        """
-        Goal:
-        Lineplot - For a given achitecture 
-        Plot the accuracy with respect to the number of epochs
-        Plot both the accuracy on the train set and on the test set
-        Inputs:
-        archi_name = string - name of the architecture 
-                     for which you want to plot the graph
-        figure = matplotlib figure - figure where the boxplot will be plotted
-        subplot = list of size 3 - location of the boxplot in the figure
-        Outputs:
-        """
-        # Set the style
-        sns.set_style("darkgrid")
-        title = archi_name # Title of the graph
-        # Add a subplot in the figure
-        ax = figure.add_subplot(*subplot) 
-        # Get the index assaciated to the name of the architecture 
-        index = self.archi_names.index(archi_name)
-        # Get the data associated to the given architecture
-        archi_data = self.dataframe[self.dataframe["architecture"] == index]
-        # Plot the graph
-        sns.lineplot(data=archi_data,x="epochs",y="accuracy",hue="type",ax=ax,ci=90)
-        handles, labels = ax.get_legend_handles_labels() # Get lines and labels
-        # Replace number by real labels
-        labels = ["test"*(label == '1.0') + "train"*(label == '0.0') for label in labels]
-        # Display label information
-        ax.set_title(title,fontsize=13)
-        ax.set_xlabel("Epochs",fontsize=13)
-        ax.set_ylabel("Accuracy",fontsize=13)
-        ax.legend(handles,labels,fontsize=13)
+#    def plot_evolution(self,archi_name,figure,subplot,test=False,fontsize=13):
+#        """
+#        Goal:
+#        Lineplot - For a given achitecture 
+#        Plot the accuracy with respect to the number of epochs
+#        Plot both the accuracy on the train set and on the test set
+#        Inputs:
+#        archi_name = string - name of the architecture 
+#                     for which you want to plot the graph
+#        figure = matplotlib figure - figure where the boxplot will be plotted
+#        subplot = list of size 3 - location of the boxplot in the figure
+#        Outputs:
+#        """
+#        # Set the style
+#        sns.set_style("darkgrid")
+#        title = archi_name # Title of the graph
+#        # Add a subplot in the figure
+#        ax = figure.add_subplot(*subplot) 
+#        # Get the index assaciated to the name of the architecture 
+#        index = self.archi_names.index(archi_name)
+#        # Get the data associated to the given architecture
+#        archi_data = self.dataframe[self.dataframe["architecture"] == index]
+#        # Plot the graph
+#        sns.lineplot(data=archi_data,x="epochs",y="accuracy",hue="type",ax=ax,ci=90)
+#        handles, labels = ax.get_legend_handles_labels() # Get lines and labels
+#        # Replace number by real labels
+#        labels = ["test"*(label == '1.0') + "train"*(label == '0.0') for label in labels]
+#        # Display label information
+#        ax.set_title(title,fontsize=13)
+#        ax.set_xlabel("Epochs",fontsize=13)
+#        ax.set_ylabel("Accuracy",fontsize=13)
+#        ax.legend(handles,labels,fontsize=13)
 
-    def plot_evolution_all(self,figure,subplot,test=True):
+    def plot_evolution_all(self,figure,subplot,type_perf=0):
         """
         Goal:
         Lineplot - Plot the accuracy with respect to the number of epochs
@@ -423,17 +453,14 @@ class Cross_validation():
         # Set the style
         sns.set_style("darkgrid")
         # Define the title to be displayed
-        subtitle = "test"*test + "train"*(not test)
+        subtitle = "test"*(type_perf == 2) + "train"*(type_perf == 0) + "validation"*(type_perf == 1)
         title = "Evolution of the " + subtitle + " accuracy"
         # Create a subplot for the graph
         ax = figure.add_subplot(*subplot)
         # Extracting the right data
-        if test:
-            accu_evo = self.dataframe.query("type == 1")
-        else:
-            accu_evo = self.dataframe.query("type == 0")
+        accu_evo = self.dataframe.query("type == " + str(type_perf))
         # Plot the graph
-        sns.lineplot(data=accu_evo,x="epochs",y="accuracy",hue="architecture",ax=ax,ci=90)
+        sns.lineplot(data=accu_evo,x="epochs",y="accuracy",hue="architecture",ax=ax,ci='sd')
         # Get the lines and labels
         handles, labels = ax.get_legend_handles_labels()
         # Replace indexes by real labels
@@ -466,6 +493,8 @@ class Cross_validation():
         ax = figure.add_subplot(*subplot) # Define the ax
         # Plot the graph
         sns.barplot(data=df,x="Architectures",y="Number of parameters",ax=ax)
+        labels = ax.get_xticklabels()
+        ax.set_xticklabels(labels,fontsize=12)
         ax.set_xlabel("Architectures",fontsize=13)
         ax.set_ylabel(col1,fontsize=13)
 
@@ -482,13 +511,16 @@ class Cross_validation():
         ax = figure.add_subplot(*subplot) # Define the ax
         mean_data_time  = self.datatime.groupby(["architecture"]).mean()
         mean_data_time = mean_data_time.reset_index()
-        # Plot the boxplot
         sns.barplot(data=mean_data_time,x="architecture",y="time",ax=ax)
+        # Plot the boxplot
+        labels = ax.get_xticklabels()
+        labels = [self.archi_names[int(float(label.get_text()))] for label in labels]
+        ax.set_xticklabels(labels,fontsize=12)
         ax.set_xlabel("Architectures",fontsize=13)
         ax.set_ylabel("Average training time [s]",fontsize=13)
 
 
-    def plot_full_comparison(self):
+    def plot_full_comparison(self,test=False,save_folder=None):
         """
         Goal:
         Plot three graphs:
@@ -498,21 +530,24 @@ class Cross_validation():
         Inputs:
         Outputs:
         """
+        type_perf = test*2 + (not test)*1
         # Create the figure
-        fig = plt.figure(figsize=[16,14])
+        fig = plt.figure(figsize=[25,14])
         # Plot the evolution on the train set
-        self.plot_evolution_all(fig,[3,5,(1,3)],test=False)
+        self.plot_evolution_all(fig,[3,5,(1,3)],type_perf=0)
         self.plot_count_param(fig,[3,5,(4,5)])
         # Plot the evolution on the test set
-        self.plot_evolution_all(fig,[3,5,(6,10)])
+        self.plot_evolution_all(fig,[3,5,(6,10)],type_perf=type_perf)
         self.plot_time_comparison(fig,[3,5,(14,15)])
         # Plot the boxplot
-        self.plot_std(fig,[3,5,(11,13)])
+        self.plot_std(fig,[3,5,(11,13)],test=test)
         plt.subplots_adjust(wspace=0.5,hspace=0.3)
+        if save_folder is not None:
+            file_name = "final_plot_" + "validation"*(not test) + test*"test" + ".svg"
+            fig.savefig(save_folder + file_name,dpi=250)
         plt.show()
 
     def plot_errors(self,error_index):
-
         if (self.errors_target[error_index].item() == 1):
             print('Model predicted right number greater than the left')
         else :

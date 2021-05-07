@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 class Naive_net(nn.Module):
 
-    def __init__(self):
+    def __init__(self,artifice=0):
         super().__init__()
         self.sequence = nn.Sequential(
             nn.Conv2d(2, 48, kernel_size=3),
@@ -129,7 +129,7 @@ class MnistResNet(nn.Module):
     
     def forward(self, input):
         output = self.sequence(input)
-        return ouput
+        return output
         
 
 class Simple_Net(nn.Module):
@@ -267,28 +267,32 @@ class oO_Net(nn.Module):
         return output_down, output_up
 
 
-class Inside_block(nn.Module):
+class ResNextBlock(nn.Module):
 
-    def __init__(self):
+    def __init__(self,n_parrallel=6):
         super().__init__()
-        self.sequence = nn.Sequential(
-            nn.Conv2d(2,2,kernel_size=(3,3),padding=(1,1)),
-            nn.BatchNorm2d(2),
-            nn.ReLU()
-        )
+        self.blocks = []
+        for i in range(n_parrallel):
+            sequence = nn.Sequential(
+                nn.Conv2d(2,2,kernel_size=(3,3),padding=(1,1)),
+                nn.BatchNorm2d(2),
+                nn.ReLU()
+            )
+            self.blocks.append(sequence)
 
     def forward(self,input):
-        output = self.sequence(input)
+        outputs = [block(input) for block in self.blocks]
+        output = input + sum(outputs)
         return output
 
 
 class LugiaNet(nn.Module):
 
-    def __init__(self,n_parrallel):
+    def __init__(self,n_block):
         super().__init__()
-        self.target_type = ["target0","target1","target1"]
+        self.target_type = ["target0"] + ["target1" for i in range(n_block)]
         self.weights_loss = [0.4,0.3,0.3]
-        self.resblock = [Inside_block() for i in range(0,n_parrallel)]
+        self.resblock = [ResNextBlock() for i in range(0,n_block)]
         self.Mnist = MnistCNN()
         self.final_layer = nn.Linear(56,2)
         self.Naive = Naive_net().sequence[:11]
@@ -300,11 +304,14 @@ class LugiaNet(nn.Module):
         )
 
     def forward(self,input):
-        output_res_list = [block(input) for block in self.resblock]
-        output_res = sum(output_res_list) + input 
+        output_res = input
+        output_res_list = []
+        for block in self.resblock:
+            output_res = block(output_res)
+            output_res_list.append(output_res)
         output_Mnist = []
         output_Naive = []
-        Branch = [input,output_res]
+        Branch = [input] + output_res_list
 
         for out in Branch:
             num1 = out[:,[0],:,:]
@@ -317,14 +324,12 @@ class LugiaNet(nn.Module):
             output_f_2 = self.Naive(out)
             output_f_2 = self.post_naive_sequence(output_f_2)
             output_Naive.append(output_f_2)
-        
-        out2 = output_Mnist[0]
-        out3 = output_Mnist[1]
 
-        output_Mnist = [out.view(out.shape[0],-1) for out in output_Mnist]
-        full_output = torch.cat(output_Mnist + output_Naive,dim=1)
+        output_Mnist_flat = [out.view(out.shape[0],-1) for out in output_Mnist]
+        full_output = torch.cat(output_Mnist_flat + output_Naive,dim=1)
         out1 = self.final_layer(full_output)
-        return out1, out2, out3
+        outputs = [out1] + output_Mnist
+        return tuple(outputs)
 
 
 
