@@ -1,8 +1,79 @@
 from torch import empty
 import math
 
+class FrameworkModule():
+
+    def __init__(self):
+        self.inputs = []
+        pass
+
+    def forward(self,inputs,no_grad=False):
+        """
+        Goal:
+        Perform the forward step
+        Inputs:
+        inputs = torch tensor - size NxDin (N number of datapoints, Din input size of the layer)
+        Outputs:
+        output = torch tensor - size NxDout (N number of datapoints, Dout output size of the layer)
+        """
+        pass
+
+    def backward(self,grdwrtoutput):
+        """
+        Goal:
+        Perform the backward step (does not change the weights to do so look at optimization_step)
+        Inputs:
+        grdwrtoutput = torch tensor - size NxDout (N number of datapoints, Dout input size of the layer)
+        Outputs:
+        grdwrtinput = torch tensor - size NxDin (N number of datapoints, Din input size of the layer)
+        """
+        pass 
+
+    def update(self,new_params):
+        """
+        Goal:
+        Replace the parameters of the model by the new parameters
+        Inputs:
+        new_params = dict - dictionary having, at least, as key the module itself. The value associated
+                     to this key is a list containing the new parameters 
+        Outputs:
+        """
+        pass
+
+    def reset(self):
+        """
+        Goal:
+        Reset the parameters of the module and the attributes
+        Inputs:
+        Outputs:
+        """
+        self.inputs = []
+        pass
+
+    def zero_grad(self):
+        """
+        Goal:
+        Reset the gradient tensors to zero
+        Inputs:
+        Outputs:
+        """
+        pass
+
+    @property
+    def params(self):
+        """
+        Goal:
+        Return the parameters of the module and the associated gradients
+        Inputs:
+        Outputs:
+        dict - dictionnary having as key the module instance itself and the value is an other 
+               dictionnary having as key "par" and "grdpar", and as value a list of the parameters of
+               the model and the corresponding gradients
+        """
+        return {self:{"par":[],"grdpar":[]}}
+
 #################### Linear class #################### 
-class Linear():
+class Linear(FrameworkModule):
     
     def __init__(self,in_size,out_size,add_bias=True):
         """
@@ -13,6 +84,7 @@ class Linear():
         add_bias = bool - Specify if you want to add a bias or not
         Outputs:
         """
+        super().__init__()
         # Initialize the weights and the associated gradient with Xavier Initialisation
         xavier = math.sqrt(6/(in_size+out_size))
         self.weights = empty(out_size,in_size).uniform_(-xavier,xavier)
@@ -28,8 +100,6 @@ class Linear():
             self.grdbias = None
         # Initialize the inputs attribute
         self.inputs = []
-        # Initialize the back flag (true if backpropagation has been performed)
-        self.back = False
             
     def forward(self,inputs,no_grad=False):
         """
@@ -37,6 +107,7 @@ class Linear():
         Perform the forward step
         Inputs:
         inputs = torch tensor - size NxDin (N number of datapoints, Din input size of the layer)
+        no_grad = Boolean - Specify wheter or not you want to perform a backward step after
         Outputs:
         output = torch tensor - size NxDout (N number of datapoints, Dout output size of the layer)
         """
@@ -69,8 +140,6 @@ class Linear():
         if self.bias is not None:
             # Compute the gradient with respect to the bias and accumulate
             self.grdbias += grdwrtoutput.sum(dim=0).view(-1,1)
-        # Set the flag back to true --> means ready for the optimization step
-        self.back = True
         return grdwrtinput
     
     def zero_grad(self):
@@ -85,24 +154,18 @@ class Linear():
         if self.bias is not None:           
             self.grdbias = empty(self.bias.shape).fill_(0)
         
-    def optimization_step(self,lr):
+    def update(self,new_params):
         """
         Goal:
-        Perform one optimization_step
+        Replace the parameters of the model (weights and bias) by the new parameters
         Inputs:
-        lr = float > 0 - learning rate 
+        new_params = dict - dictionary having at least as key the module itself. The value associated
+                     to this keep is a list containing the new weight and bias tensors 
         Outputs:
         """
-        # If the backward step has not been performed raise an error message
-        if not self.back:
-            return "Backward step has not been performed"
-        # Update the weights
-        self.weights -= self.grdweights*lr
-        if self.bias is not None:
-            # Update the bias
-            self.bias -= self.grdbias*lr
-        # Set the flag back to 0
-        self.back = False
+        self.weights = new_params[self][0]
+        if len(new_params[self]) > 1:
+            self.bias = new_params[self][1]
         
     def reset(self):
         """
@@ -121,27 +184,26 @@ class Linear():
         # Set gradients to 0
         self.zero_grad()
         # Reset the inputs to None
-        self.inputs = None
+        self.inputs = []
         
     @property
     def params(self):
         """
         Goal:
-        Return the weights, bias and their respective gradient tensor
+        Return the parameters of the module and the associated gradients
         Inputs:
         Outputs:
-        param = torch tensor - 
-                size DoutxDin [+1 if bias] (Dout output size of the layer, Din input size of the layer)
-        grdparam = torch tensor - 
-                   size DoutxDin [+1 if bias] (Dout output size of the layer, Din input size of the layer)
+        dict - dictionnary having as key the module instance itself and the value is an other 
+               dictionnary having as key "par" and "grdpar", and as value a list of the parameters of
+               the model and the corresponding gradients
         """
         if self.bias is None:
-            param = self.weights # Get the weights
-            grdparam = self.grdweights # Get the gradient
+            param = [self.weights] # Get the weights
+            grdparam = [self.grdweights] # Get the gradient
         else:
             param = [self.weights,self.bias] # To be modified
             grdparam = [self.grdweights,self.grdbias] # To be modified
-        return param, grdparam
+        return {self:{"par":param,"grdpar":grdparam}}
 
 #################### MSELoss class #################### 
 
@@ -156,30 +218,30 @@ class MSELoss():
         """
         self.mean = mean
         # Initialize the inputs attribute
-        self.inputs = None
+        self.outputs = None
         # Intialize the targets attribute
         self.targets = None
        
-    def forward(self,inputs,targets):
+    def forward(self,outputs,targets):
         """
         Goal:
         Compute the loss
         Inputs:
-        inputs = torch tensor - (N number of datapoints, D output size of the last layer)
-        targets = torch tensor - (N number of datapoints, D output size of the last layer)
+        inputs = torch tensor - size NxD (N number of datapoints, D dimension of the target)
+        targets = torch tensor - size NxD (N number of datapoints, D dimension of the target)
         Outputs:
         loss = float - MSE loss 
         """
         # Store the inputs into the inputs attributes (will be useful for the backward)
-        self.inputs = inputs
+        self.outputs = outputs
         # Store the targets into the inputs attributes (will be useful for the backward)
         self.targets = targets
         if self.mean:
             # Compute the loss and take the mean
-            loss = ((inputs - targets)**2).mean()
+            loss = ((outputs - targets)**2).mean()
         else:
             # Compute the loss and take the sum
-            loss = ((inputs - targets)**2).sum()
+            loss = ((outputs - targets)**2).sum()
         return loss
             
     def backward(self):
@@ -188,30 +250,88 @@ class MSELoss():
         Compute the gradient of the loss with respect to the output of the last layer
         Inputs:
         Outputs:
+        grdwrtoutput = torch tensor - size NxD (N number of data points, D dimension of the target)
         """
         # Raise a message error if the forward step has not been performed
-        if self.inputs is None or self.targets is None:
+        if self.outputs is None or self.targets is None:
             return "Forward step has not been performed"
         if self.mean:
             # Compute the gradient 
-            grdwrtinput = 2*(self.inputs-self.targets)/(self.inputs.shape[0])
+            grdwrtoutput = 2*(self.outputs-self.targets)/(self.outputs.shape[0])
         else:
-            grdwrtinput = 2*(self.inputs-self.targets)
-        return grdwrtinput    
-      
-    @property
-    def params(self):
+            grdwrtoutput = 2*(self.outputs-self.targets)
+        return grdwrtoutput    
+    
+
+#################### Activation functions class #################### 
+
+class ActivationFunction(FrameworkModule):
+
+    def __init__(self):
         """
         Goal:
-        Return the parameters, actually nothing to return
         Inputs:
-        Outputs:
+        Outputs: 
         """
-        return []
+        super().__init__()
+        self.inputs = []
+
+    def function(self,x):
+        """
+        Goal:
+        Evaluate the activation function pointwise to the tensor x
+        Inputs:
+        x = torch.tensor - size NxD (N number of data points, D dimension of the input)
+        Outputs: 
+        tensor of same size 
+        """
+        return empty(1,1)
+
+    def derivative(self,x):
+        """
+        Goal:
+        Evaluate the first derivative of the activation function pointwise to the tensor x
+        Inputs:
+        x = torch.tensor - size NxD (N number of data points, D dimension of the input)
+        Outputs: 
+        tensor of same size 
+        """
+        return empty(1,1)
+
+    def forward(self,inputs,no_grad=False):
+        """
+        Goal:
+        Perform the forward step
+        Inputs:
+        inputs = torch tensor - size NxD (N number of data points, D dimension of the input)
+        no_grad = Boolean - Specify wheter or not you want to perform a backward step after
+        Outputs: 
+        output = torch tensor - size NxD (N number of data points, D dimension of the input)
+        """
+        if not no_grad:
+            self.inputs.append(inputs)
+        output = self.function(inputs)
+        return output
+
+    def backward(self,grdwrtoutput):
+        """
+        Goal: 
+        Compute the gradient with respect to the input
+        Inputs: 
+        grdwrtoutput = torch tensor - size NxD where D is the dimension of the layer and N the number of samples
+        Outputs: 
+        torch tensor of the same size storing the gradient with respect to the input
+        """
+        if len(self.inputs) == 0:
+            return "Forward step has not been performed"
+        inputs = self.inputs.pop()
+        grdphi = self.derivative(inputs)
+        grdwrtinput = grdphi*grdwrtoutput
+        return grdwrtinput
 
 #################### ReLU class #################### 
 
-class ReLU():
+class ReLU(ActivationFunction):
     
     def __init__(self):
         """
@@ -219,58 +339,37 @@ class ReLU():
         Inputs:
         Outputs: 
         """
-        # Initialize the list of inputs attribute
-        self.inputs = []
-        
-    def forward(self,inputs,no_grad=False):
+        super().__init__()
+
+    def function(self,x):
         """
         Goal:
-        Perform the forward step using ReLU
+        Evaluate the activation function pointwise to the tensor x
         Inputs:
-        inputs = torch tensor
+        x = torch.tensor - size NxD (N number of data points, D dimension of the input)
         Outputs: 
-        torch tensor of the same size
+        tensor of same size 
         """
-        if not no_grad:
-            # Add inputs to the attribute "input"
-            self.inputs.append(inputs)
-        # Set all negative components of input to zero to get ReLU of the inputs
-        output = inputs.clone()
-        output[inputs <= 0] = 0
+        output = x.clone()
+        output[x <= 0] = 0
         return output
-        
-    def backward(self,grdwrtoutput):
-        """
-        Goal: 
-        Perform the backward step after ReLU has been computed
-        Inputs: 
-        gradient with respect to output - torch tensor of size NxD where D is the dimension of the layer and N the number of samples
-        Outputs: 
-        torch tensor of the same size storing the gradient with respect to the input
-        """
-        if len(self.inputs) == 0:
-            return "Forward step has not been performed"
-        inputs = self.inputs.pop()
-        # grdphi contains the component-wise gradient of ReLU
-        grdphi = empty(inputs.shape).fill_(0)
-        grdphi[inputs > 0] = 1
-        # Use chain-rule to compute gradient w.r.t. input from gradient w.r.t. output
-        grdwrtinput = grdphi*grdwrtoutput
-        return grdwrtinput
-        
-    @property
-    def params(self):
+
+    def derivative(self,x):
         """
         Goal:
-        Return the parameters, actually nothing to return
+        Evaluate the first derivative of the activation function pointwise to the tensor x
         Inputs:
-        Outputs:
+        x = torch.tensor - size NxD (N number of data points, D dimension of the input)
+        Outputs: 
+        tensor of same size 
         """
-        return []
+        grdphi = empty(x.shape).fill_(0)
+        grdphi[x > 0] = 1
+        return grdphi
 
 #################### Tanh class #################### 
 
-class Tanh():
+class Tanh(ActivationFunction):
     
     def __init__(self):
         """
@@ -278,77 +377,44 @@ class Tanh():
         Inputs:
         Outputs: 
         """
-        # Initialize the inputs attribute
-        self.inputs = []
+        super().__init__()
         
-    def tanh(self,x):
+    def function(self,x):
         """
         Goal:
-        Inputs: 
-        x = torch tensor
+        Evaluate the activation function pointwise to the tensor x
+        Inputs:
+        x = torch.tensor - size NxD (N number of data points, D dimension of the input)
         Outputs: 
-        Component-wise tanh of the input = torch tensor of the same size
+        tensor of same size 
         """
         return (x.exp() - (-x).exp())/(x.exp() + (-x).exp())
-        
-    def forward(self,inputs,no_grad=False):
-        """
-        Goal: 
-        Perform the forward step computing tanh
-        Inputs: 
-        inputs = torch tensor
-        Outputs: 
-        Torch tensor of the same size = tanh(input)
-        """
-        if not no_grad:
-            # Add inputs to the attribute "input"
-            self.inputs.append(inputs)
-        # Compute tanh of the input
-        output = self.tanh(inputs)
-        return output
-        
-    def backward(self,grdwrtoutput):
-        """
-        Goal: 
-        Perform the backward step after tanh has been computed
-        Inputs: 
-        gradient with respect to output - torch tensor of size NxD where D is the dimension of the layer and N the number of samples
-        Outputs: 
-        torch tensor of the same size storing the gradient with respect to the input
-        """
-        if len(self.inputs) == 0:
-            return "Forward step has not been performed"
-        inputs = self.inputs.pop()
-        # Compute the gradient using chain rule and return it
-        grdwrtinput = (1 - self.tanh(inputs)**2)*grdwrtoutput
-        return grdwrtinput
-        
-    @property
-    def params(self):
+
+    def derivative(self,x):
         """
         Goal:
-        Return the parameters, actually nothing to return
+        Evaluate the first derivative of the activation function pointwise to the tensor x
         Inputs:
-        Outputs:
+        x = torch.tensor - size NxD (N number of data points, D dimension of the input)
+        Outputs: 
+        tensor of same size 
         """
-        return []
+        return 1 - self.function(x)**2
 
 #################### Sequential class #################### 
 
-class Sequential():
+class Sequential(FrameworkModule):
     
     def __init__(self,*sequence):  # deleted the * before "sequence" so that a list of modules works
         """
         Goal:
         Inputs: 
         sequence = list of modules
-        loss = module of a loss
         Outputs:
         """
+        super().__init__()
         # Initialize the sequence attribute, containing modules of models and losses
         self.sequence = sequence
-        # Initialize the back flag (true if backpropagation has been performed)
-        self.back = False
         
     def forward(self,inputs,no_grad=False):
         """
@@ -356,6 +422,7 @@ class Sequential():
         Perform the forward path
         Inputs:
         inputs = list of modules
+        no_grad = Boolean - Specify wheter or not you want to perform a backward step after
         Outputs:
         output of the forward path = torch tensor
         """
@@ -380,25 +447,18 @@ class Sequential():
             if grdwrtoutput == "Forward step has not been performed":
                 message = str(type(module).__name__) + " : " + grdwrtoutput
                 return message
-        # Set the backward flag to true
-        self.back = True
-            
-    def optimization_step(self,lr):
+
+    def update(self,new_params):
         """
-        Goal: 
-        update the weights using module.optimization_step for all the linear modules involved
-        Inputs: 
-        lr = float > 0: learning rate
+        Goal:
+        Replace the parameters of the model by the new parameters
+        Inputs:
+        new_params = dict - dictionary having as key the modules of the sequence. The value associated
+                     to these keys are lists containing the new parameters 
         Outputs:
         """
-        # If the backward step hasn't been performed, return an error message
-        if not self.back:
-            return "Backward step has not been performed"
-        # For every module that can be optimized, i.e. for the instances of Linear, update the weights
-        for module in self.sequence:
-            if hasattr(module,"optimization_step"):
-                module.optimization_step(lr)      
-        self.back = False
+        for module in new_params:
+            module.update(new_params)
                 
     def zero_grad(self):
         """
@@ -409,8 +469,7 @@ class Sequential():
         """
         for module in self.sequence:
             # Use the method zero_grad of all involved modules, which fulfill that purpose
-            if hasattr(module,"zero_grad"):
-                module.zero_grad()
+            module.zero_grad()
 
     def reset(self):
         """
@@ -420,24 +479,66 @@ class Sequential():
         Outputs:
         """
         for module in self.sequence:
-            # If the module has the attribute "reset", namely if its class is Linear, apply its reset method
-            if hasattr(module,"reset"):
-                module.reset()
+            module.reset()
     
     @property
     def params(self):
         """
         Goal:
-        Return all parameters, i.e. weights and biases of each layer, and gradients of the weights and biases
+        Return the parameters of the module and the associated gradients
         Inputs:
         Outputs:
+        dict - dictionnary having as key the modules of the sequence. The values associated
+               are dictionnary where the keys are "par" and "grdpar" and the values are the parameters
+               and the corresponding gradients
         """
-        # Initialize the list of all paremeters
-        params = []
+        # Initialize the list of all parameters
+        dic_params = {}
         for module in self.sequence:
-            mod_params = module.params
-            # For every module, if the current module has parameters, add them
-            if len(mod_params) > 0:
-                params.append(mod_params)
-        return params
+            dic_params = {**dic_params, **module.params}
+        return dic_params
+
+#################### Optimizer class #################### 
        
+class Optim():
+
+    def __init__(self,model,lr=1e-2):
+        """
+        Goal: 
+        Inputs: 
+        model = model to be optimized
+        lr = float - learning rate
+        Outputs:
+        """
+        self.model = model
+        self.lr = lr
+
+    def grad_descent(self,param,grdparam):
+        """
+        Goal: 
+        Compute new parameters using gradient descent
+        Inputs: 
+        param = list of tensor - list of tensors containing parameters 
+        grdparam = list of tensor - list of tensors containing corresponding gradients
+        Outputs:
+        """
+        if len(param) == 0:
+            new_param = []
+        else:
+            new_param = [par - self.lr*grdparam[i] for i,par in enumerate(param)]
+        return new_param
+
+    def optimize(self):
+        """
+        Goal: 
+        Compute new parameters and pass these new parameters to the model
+        Inputs: 
+        Outputs:
+        """
+        params = self.model.params # Get the current parameters
+        new_params = {}
+        for mod_param in params:
+            par = params[mod_param]["par"]
+            grdpar = params[mod_param]["grdpar"]
+            new_params[mod_param] = self.grad_descent(par,grdpar) # Compute new parameters
+        self.model.update(new_params)

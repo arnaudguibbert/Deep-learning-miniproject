@@ -76,6 +76,7 @@ def assess_model(model_gen,epochs,granularity,runs=10):
 
 def train_model(model,train_inputs,train_targets,
                 epochs=100,mini_batch_size=100,lr=5e-2):
+    optimizer = frw.Optim(model,lr=lr)
     criterion = frw.MSELoss()
     for _ in range(epochs):
         for b in range(0,train_inputs.shape[0],mini_batch_size):
@@ -86,4 +87,4 @@ def train_model(model,train_inputs,train_targets,
             grdwrtoutput= criterion.backward()
             model.zero_grad()
             model.backward(grdwrtoutput)
-            model.optimization_step(lr)
+            optimizer.optimize()
