@@ -50,8 +50,8 @@ def assess_model(model_gen,epochs,granularity,runs=10):
         train_inputs, train_targets = inputs[1000:], targets[1000:]
         accu_train = compute_nb_errors(model,train_inputs, train_targets)
         accu_test = compute_nb_errors(model,test_inputs, test_targets)
-        row_train = np.array([run,accu_train,epoch,0]).reshape(1,-1)
-        row_test = np.array([run,accu_test,epoch,1]).reshape(1,-1)
+        row_train = np.array([run,accu_train,0,0]).reshape(1,-1)
+        row_test = np.array([run,accu_test,0,1]).reshape(1,-1)
         np_data = np.concatenate((np_data,row_train,row_test),axis=0)
         for epoch in range(0,epochs,granularity):
             train_model(model,train_inputs,train_targets)
@@ -60,15 +60,14 @@ def assess_model(model_gen,epochs,granularity,runs=10):
             row_train = np.array([run,accu_train,epoch,0]).reshape(1,-1)
             row_test = np.array([run,accu_test,epoch,1]).reshape(1,-1)
             np_data = np.concatenate((np_data,row_train,row_test),axis=0)
-        row = row.reshape(-1).tolist()
+        row = [run,row_train[0,1],row_test[0,1]]
         print(row_format.format(*row))
     columns = ["Run","Accuracy","Epochs","type"]
     data_pd = pd.DataFrame(np_data,columns=columns)
     fig = plt.figure(figsize=[10,6])
     ax = fig.add_subplot(1,1,1)
     sns.set_style("darkgrid")
-    sns.lineplot(data=data_pd,x="Epochs",y="Accuracy train",ax=ax)
-    sns.lineplot(data=data_pd,x="Epochs",y="Accuracy test",ax=ax)
+    sns.lineplot(data=data_pd,x="Epochs",y="Accuracy",ax=ax,hue="type")
     plt.show()
     return np_data
 
