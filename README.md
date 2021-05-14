@@ -13,13 +13,12 @@ data_architecture contains three files:
 * time.csv: maps a run number and an index (defined above) to the time it took to one of our machine to generate the results.  
   
 figure contains three files:
-* boxplot_validation.svg: boxplot of results for various hyperparameters
-
+* boxplot_validation.svg: boxplot of results for various hyperparameters  
   
 ## This repository contains:  
-* **dlc_practical_prologue.py** contains the function *generate_pair_sets* which generates the desired number of train/target sets
-* In **architecture.py**, we define all our models.
+* **dlc_practical_prologue.py** contains the function *generate_pair_sets* which generates the desired number of train/target sets.
+* In **architecture.py**, we define all of our models.
 * **metrics.py** contains a method *train_model* which can train any of the models defined in architecture.py, regardless of the number of losses used in the model.  
 It also contains the class *Cross_validation*, with various plots, counts, and tests to evaluate the performances.
-* **test.py** saves .csv files containing results associated to specific architecture/parameters choice, and the corresponding .svg graphs
-* **testers.ipynb** is a notebook with various results and plots
+* **test.py** saves .csv files containing results associated to specific architecture/parameters choice, and the corresponding .svg graphs.
+* **testers.ipynb** is a notebook with various results and plots.
