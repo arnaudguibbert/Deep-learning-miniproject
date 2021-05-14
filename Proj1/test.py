@@ -10,7 +10,7 @@ runs = 15
 find_hyperparameters = True
 best_hyper_Oonet = None
 best_hyper_Lugianet = None
-valid_Oo_args = [[2],[3],[4],[5]]
+valid_Oo_args = [[[0.01,0.99]],[[0.1,0.9]],[[0.3,0.7]],[[0.5,0.5]],[[0.7,0.3]],[[0.9,0.1]],[[0.99,0.01]]]
 valid_Lugia_args = None
 
 directories = ["figures","data_architectures"]
@@ -39,7 +39,7 @@ if find_hyperparameters:
     if valid_Oo_args is not None:
 
         print("Launch Oo hyperparameter research \n")
-        valid_Oo_architectures = [LugiaNet]*len(valid_Oo_args)
+        valid_Oo_architectures = [oO_Net]*len(valid_Oo_args)
         # Initialize the cross validation to determine the hyperparameters of some architectures
         validation_Oo = Cross_validation(valid_Oo_architectures,
                                             valid_Oo_args,

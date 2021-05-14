@@ -247,14 +247,14 @@ class Simple_Net(nn.Module):
         return output
 
 class CrossArchitecture(nn.Module):
-        """
-        First attempt to combine a CNN for digit-classification and a CNN for comparison (binary output).
-        Two losses, one for each task. Concatenates an intermediate output of the digit-classification 
-        part to the comparison part, hence the name CrossArchitecture.
-        
-        Input: Nx2x14x14
-        Output: (Nx10), (Nx2)
-        """
+    """
+    First attempt to combine a CNN for digit-classification and a CNN for comparison (binary output).
+    Two losses, one for each task. Concatenates an intermediate output of the digit-classification 
+    part to the comparison part, hence the name CrossArchitecture.
+    
+    Input: Nx2x14x14
+    Output: (Nx10), (Nx2)
+    """
 
     def __init__(self):
         super().__init__()
@@ -292,7 +292,7 @@ class oO_Net(nn.Module):
     Information is shared between both arms by concatenation or summation
     """
     
-    def __init__(self, embedded_dim=4,use_MnistResNet=False, weights_loss=[0.5,0.5]):
+    def __init__(self, embedded_dim=4,use_MnistResNet=False,weights_loss=[0.5,0.5]):
         super().__init__()
         self.target_type = ["target0","target1"]
         self.weights_loss = weights_loss
