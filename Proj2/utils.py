@@ -5,7 +5,6 @@ import seaborn as sns
 import pandas as pd
 from torch import empty
 import torch
-from pytorchNet import train_pytorch_model
 import framework as frw
 
 def generate_disc_set(nb=1000):

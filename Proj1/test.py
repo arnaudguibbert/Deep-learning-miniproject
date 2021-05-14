@@ -11,7 +11,7 @@ find_hyperparameters = True
 best_hyper_Oonet = None
 best_hyper_Lugianet = None
 valid_Oo_args = [[2],[3],[4],[5]]
-valid_Lugia_args = [[2],[3],[4],[5]]
+valid_Lugia_args = None
 
 directories = ["figures","data_architectures"]
 
@@ -20,32 +20,36 @@ for directory in directories:
         os.mkdir(directory)
 
 if find_hyperparameters:
-    print("Launch Lugia hyperparameter research \n")
-    # Valid architectures
-    valid_Lugia_architectures = [LugiaNet]*len(valid_Lugia_args)
-    # Initialize the cross validation to determine the hyperparameters of some architectures
-    validation_Lugia = Cross_validation(valid_Lugia_architectures,
-                                        valid_Lugia_args,
-                                        epochs=max_epochs,
-                                        steps=granularity,runs=runs)
-    validation_Lugia.run_all(save_data="validation_Lugia",test=False)
+    if valid_Lugia_args is not None:
 
-    fig = plt.figure(figsize=[14,7])
-    validation_Lugia.plot_std(fig,[1,1,1],test=False)
-    fig.savefig("figures/boxplot_validation_LugiaNet.svg")
+        print("Launch Lugia hyperparameter research \n")
+        # Valid architectures
+        valid_Lugia_architectures = [LugiaNet]*len(valid_Lugia_args)
+        # Initialize the cross validation to determine the hyperparameters of some architectures
+        validation_Lugia = Cross_validation(valid_Lugia_architectures,
+                                            valid_Lugia_args,
+                                            epochs=max_epochs,
+                                            steps=granularity,runs=runs)
+        validation_Lugia.run_all(save_data="validation_Lugia",test=False)
 
-    print("Launch Oo hyperparameter research \n")
-    valid_Oo_architectures = [LugiaNet]*len(valid_Oo_args)
-    # Initialize the cross validation to determine the hyperparameters of some architectures
-    validation_Oo = Cross_validation(valid_Oo_architectures,
-                                     valid_Oo_args,
-                                     epochs=max_epochs,
-                                     steps=granularity,runs=runs)
-    validation_Oo.run_all(save_data="validation_Oo",test=False)
+        fig = plt.figure(figsize=[14,7])
+        validation_Lugia.plot_std(fig,[1,1,1],test=False)
+        fig.savefig("figures/boxplot_validation_LugiaNet.svg")
 
-    fig = plt.figure(figsize=[14,7])
-    validation_Oo.plot_std(fig,[1,1,1],test=False)
-    fig.savefig("figures/boxplot_validation_OoNet.svg")
+    if valid_Oo_args is not None:
+
+        print("Launch Oo hyperparameter research \n")
+        valid_Oo_architectures = [LugiaNet]*len(valid_Oo_args)
+        # Initialize the cross validation to determine the hyperparameters of some architectures
+        validation_Oo = Cross_validation(valid_Oo_architectures,
+                                            valid_Oo_args,
+                                            epochs=max_epochs,
+                                            steps=granularity,runs=runs)
+        validation_Oo.run_all(save_data="validation_Oo",test=False)
+
+        fig = plt.figure(figsize=[14,7])
+        validation_Oo.plot_std(fig,[1,1,1],test=False)
+        fig.savefig("figures/boxplot_validation_OoNet.svg")
 
 
 if best_hyper_Oonet is not None and best_hyper_Lugianet is not None:
