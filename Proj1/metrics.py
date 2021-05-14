@@ -346,7 +346,7 @@ class Cross_validation():
         for archi_name in self.archi_names:
             self.run_one(archi_name,test=test)
         if save_data is not None:
-            corres_pd = pd.DataFrame(self.archi_names,colums=["Architecture name"])
+            corres_pd = pd.DataFrame(self.archi_names,columns=["Architecture name"])
             corres_pd.to_csv("data_architectures/corres_index" + save_data + ".csv")
             self.dataframe.to_csv("data_architectures/accuracy" + save_data + ".csv",index=False)
             self.datatime.to_csv("data_architectures/time" + save_data + ".csv",index=False)
@@ -413,39 +413,6 @@ class Cross_validation():
         ax.set_xticklabels(self.archi_names,fontsize=13)
         ax.set_xlabel("Architectures",fontsize=13)
         ax.set_ylabel("Accuracy",fontsize=13)
-
-#    def plot_evolution(self,archi_name,figure,subplot,test=False,fontsize=13):
-#        """
-#        Goal:
-#        Lineplot - For a given achitecture 
-#        Plot the accuracy with respect to the number of epochs
-#        Plot both the accuracy on the train set and on the test set
-#        Inputs:
-#        archi_name = string - name of the architecture 
-#                     for which you want to plot the graph
-#        figure = matplotlib figure - figure where the boxplot will be plotted
-#        subplot = list of size 3 - location of the boxplot in the figure
-#        Outputs:
-#        """
-#        # Set the style
-#        sns.set_style("darkgrid")
-#        title = archi_name # Title of the graph
-#        # Add a subplot in the figure
-#        ax = figure.add_subplot(*subplot) 
-#        # Get the index assaciated to the name of the architecture 
-#        index = self.archi_names.index(archi_name)
-#        # Get the data associated to the given architecture
-#        archi_data = self.dataframe[self.dataframe["architecture"] == index]
-#        # Plot the graph
-#        sns.lineplot(data=archi_data,x="epochs",y="accuracy",hue="type",ax=ax,ci=90)
-#        handles, labels = ax.get_legend_handles_labels() # Get lines and labels
-#        # Replace number by real labels
-#        labels = ["test"*(label == '1.0') + "train"*(label == '0.0') for label in labels]
-#        # Display label information
-#        ax.set_title(title,fontsize=13)
-#        ax.set_xlabel("Epochs",fontsize=13)
-#        ax.set_ylabel("Accuracy",fontsize=13)
-#        ax.legend(handles,labels,fontsize=13)
 
     def plot_evolution_all(self,figure,subplot,type_perf=0):
         """
