@@ -4,7 +4,6 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 from torch import empty
-import torch
 import framework as frw
 
 def generate_disc_set(nb=1000):
