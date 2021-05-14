@@ -346,7 +346,7 @@ class Cross_validation():
         for archi_name in self.archi_names:
             self.run_one(archi_name,test=test)
         if save_data is not None:
-            corres_pd = pd.DataFrame(self.archi_names,colums=["Architecture name"])
+            corres_pd = pd.DataFrame(self.archi_names,columns=["Architecture name"])
             corres_pd.to_csv("data_architectures/corres_index" + save_data + ".csv")
             self.dataframe.to_csv("data_architectures/accuracy" + save_data + ".csv",index=False)
             self.datatime.to_csv("data_architectures/time" + save_data + ".csv",index=False)

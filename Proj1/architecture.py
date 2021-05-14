@@ -261,11 +261,12 @@ class CrossArchitecture(nn.Module):
 
 class oO_Net(nn.Module):
     
-    def __init__(self, use_MnistResNet=False):
+    def __init__(self, embedded_dim=4,use_MnistResNet=False, weights_loss=[0.5,0.5]):
         super().__init__()
         self.target_type = ["target0","target1"]
-        self.weights_loss = [0.5,0.5]
-        
+        self.weights_loss = weights_loss
+        self.emb_dim=embedded_dim
+
         if use_MnistResNet:
             nb_blocks = MnistResNet().nb_blocks
             self.Mnist_part = MnistResNet().sequence[:13+nb_blocks] # out shape = (N,64,2)
@@ -285,11 +286,11 @@ class oO_Net(nn.Module):
             nn.Linear(128,32),
             nn.ReLU(),
             nn.BatchNorm1d(32),
-            nn.Linear(32,4)
+            nn.Linear(32,self.emb_dim)
         )
         
         self.lower_last_sequence = nn.Sequential(
-            nn.Linear(24,12),
+            nn.Linear(20+self.emb_dim,12),
             nn.ReLU(),
             nn.BatchNorm1d(12),
             nn.Linear(12,2)
