@@ -3,37 +3,40 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class BigNaive(nn.Module):
+    """
+    Input: Nx2x14x14 images
+    Output: Nx2 labels
     
-    def __init__(self, mode='train'):
+    CNN with the following architecture (BN and Dropout not mentioned):
+    2x14x14 -> (conv) 32x12x12 -> (conv) 64x10x10 -> (conv) 64x8x8
+    -> (maxpool) 64x4x4 -> (conv) 64x2x2 -> (maxpool) 64x1x1
+    -> (flatten) 64 -> (fc) 16 -> (fc) 2
+    """
+    
+    def __init__(self):
         super().__init__()
-        
-        if mode=='train': 
-            self.p = 0.5
-        if mode=='eval':
-            self.p = 0.0
         
         self.sequence = nn.Sequential(
             nn.Conv2d(2, 32, kernel_size=3),
             nn.ReLU(),
             nn.BatchNorm2d(32),
-            nn.Dropout(self.p/3),
+            nn.Dropout(1/6),
             
             nn.Conv2d(32, 64, kernel_size=3),
             nn.ReLU(),
             nn.BatchNorm2d(64),
-            nn.Dropout(self.p/2),
+            nn.Dropout(1/4),
             
             nn.Conv2d(64, 64, kernel_size=3),
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
             nn.ReLU(),
-            nn.ReLU(),
             nn.BatchNorm2d(64),
-            nn.Dropout(self.p),
+            nn.Dropout(),
             
             nn.Conv2d(64, 64, kernel_size=3),
             nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
             nn.BatchNorm2d(64),
-            nn.Dropout(self.p),
+            nn.Dropout(),
             nn.Flatten(),
             
             nn.Linear(64, 16),
@@ -53,6 +56,14 @@ class BigNaive(nn.Module):
 
 
 class Naive_net(nn.Module):
+    """
+    Input: Nx2x14x14 images
+    Output: Nx2 labels
+    
+    CNN with the following architecture (BN and Dropout not mentioned):
+    2x14x14 -> (conv) 48x12x12 -> (maxpool) 48x6x6 -> (conv) 32x4x4 
+    -> (maxpool) 32x2x2 -> (flatten) 128 -> (fc) 64 -> (fc) 2
+    """
 
     def __init__(self,artifice=0):
         super().__init__()
