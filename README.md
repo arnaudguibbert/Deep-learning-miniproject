@@ -13,7 +13,7 @@ data_architecture contains three files:
 * time.csv: maps a run number and an index (defined above) to the time it took to one of our machine to generate the results.  
   
 figure contains three files:
-*boxplot_validation.svg: boxplot of results for various hyperparameters
+* boxplot_validation.svg: boxplot of results for various hyperparameters
 
   
 ## This repository contains:  
