@@ -125,7 +125,7 @@ class Cross_validation():
         self.errors_numbers = torch.empty(0,1)
         self.right_target = torch.empty(0,1)
 
-    def count_params(self):
+    def count_params(self,save_data=None):
         """
         Goal:
         Count the number of parameters to be trained for each model. 
@@ -142,6 +142,10 @@ class Cross_validation():
                 for params in model.parameters():
                     n_params += params.numel()
             param_count.append(n_params)
+        if save_data is not None:
+            data_param = np.array(self.archi_names + param_count).T
+            param_pd = pd.DataFrame(data_param,columns=["Architectures","Number of parameters"])
+            param_pd.to_csv("data_architectures/param_count" + save_data + ".csv",index=False)
         return param_count
 
     def data_augmentation(self,train_input):
@@ -319,7 +323,7 @@ class Cross_validation():
         self.datatime = self.datatime.append(df_time,ignore_index=True)
         self.remove_line()
 
-    def run_all(self,test=False):
+    def run_all(self,test=False,save_data=None):
         """
         Goal:
         For each architecture : 
@@ -341,6 +345,11 @@ class Cross_validation():
         # For each architecture
         for archi_name in self.archi_names:
             self.run_one(archi_name,test=test)
+        if save_data is not None:
+            corres_pd = pd.DataFrame(self.archi_names,colums=["Architecture name"])
+            corres_pd.to_csv("data_architectures/corres_index" + save_data + ".csv")
+            self.dataframe.to_csv("data_architectures/accuracy" + save_data + ".csv",index=False)
+            self.datatime.to_csv("data_architectures/time" + save_data + ".csv",index=False)
 
     def remove_line(self):
         """
