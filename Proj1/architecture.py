@@ -93,6 +93,15 @@ class Naive_net(nn.Module):
 
 
 class MnistCNN(nn.Module):
+    """
+    Input: Nx1x14x14
+    Output: Nx10
+    
+    CNN for digit classification of one channel with the following architecture:
+    1x14x14 -> (conv) 96x12x12 -> (maxpool) 96x6x6 -> (conv) 48x5x5
+    -> (conv) 32x4x4 -> (maxpool) 32x2x2 -> (conv) 64x1x1 -> (flatten) 64
+    -> (fc) 128 -> (fc) 64 -> (fc) 10
+    """
 
     def __init__(self):
         super().__init__()
@@ -140,6 +149,9 @@ class MnistCNN(nn.Module):
         return output
     
 class ResBlock(nn.Module):
+    """
+    Creates a resblock with out dim = in dim
+    """
     
     def __init__(self,nb_channels,kernel_size):
         super().__init__()     
@@ -159,11 +171,14 @@ class ResBlock(nn.Module):
         return y
         
 class MnistResNet(nn.Module):
-    """ResNet for MNIST with the following architecture:
+    """
+    Input: Nx1x14x14
+    Output: Nx10
+    
+    ResNet for digit classification with architecture (BN, Dropout not mentioned):
     1x14x14 -> (conv) 32x11x11 -> (conv) 16x8x8
     -> (resblocks) 16x8x8 -> (maxpool) 16x4x4 -> (conv) 16x2x2
     -> (flatten) 64 -> (fc) 10
-    Some dropout can/should be added rather at the end of the net
     """
     
     def __init__(self, nb_blocks=3):
@@ -193,12 +208,14 @@ class MnistResNet(nn.Module):
         
 
 class Simple_Net(nn.Module):
+    """
+    Another CNN for digit classification, similar architecture as MnistCNN
+    Inspired by: https://github.com/Coderx7/SimpleNet
+    """
 
     def __init__(self):
         super().__init__()
         self.sequence = nn.Sequential(
-            #simpleNet inspired implementation :https://github.com/Coderx7/SimpleNet
-            #Conv1
             nn.Conv2d(1,64,kernel_size=(3,3)),
             nn.BatchNorm2d(64),
             nn.ReLU(),
@@ -230,6 +247,14 @@ class Simple_Net(nn.Module):
         return output
 
 class CrossArchitecture(nn.Module):
+        """
+        First attempt to combine a CNN for digit-classification and a CNN for comparison (binary output).
+        Two losses, one for each task. Concatenates an intermediate output of the digit-classification 
+        part to the comparison part, hence the name CrossArchitecture.
+        
+        Input: Nx2x14x14
+        Output: (Nx10), (Nx2)
+        """
 
     def __init__(self):
         super().__init__()
@@ -243,9 +268,6 @@ class CrossArchitecture(nn.Module):
         self.weights_loss = [0.5,0.5]
     
     def forward(self,input):
-        """MnistCNN outputs a prediction for both digits, NaiveNet outputs the predicted comparison.
-        No weights shared up to that point. Then, two linear layers take these predictions as input (size N*22).
-        Output: predicted comparison of the two digits."""
         num1 = input[:,[0],:,:]
         num2 = input[:,[1],:,:]
         output_naive = self.NaiveNet(input) # shape = (N,2)
@@ -260,6 +282,15 @@ class CrossArchitecture(nn.Module):
         return output1, output2
 
 class oO_Net(nn.Module):
+    """
+    Input: Nx2x14x14
+    Output: (Nx10), (Nx2)
+    
+    Combines two arms with two loss functions: one arm for digit-classification, one for binary classif.
+    binary classification is done by using "Naive_net"
+    digit-classification can be done either by a CNN or a ResNet (set use_MnistResNet to True)
+    Information is shared between both arms by concatenation or summation
+    """
     
     def __init__(self, embedded_dim=4,use_MnistResNet=False, weights_loss=[0.5,0.5]):
         super().__init__()
@@ -348,6 +379,10 @@ class ResNextBlock(nn.Module):
 
 
 class LugiaNet(nn.Module):
+    """
+    Input: Nx2x14x14
+    Output: (Nx10), (Nx2)
+    """
 
     def __init__(self,n_block):
         super().__init__()
