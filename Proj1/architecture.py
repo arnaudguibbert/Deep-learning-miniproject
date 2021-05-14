@@ -93,6 +93,12 @@ class Naive_net(nn.Module):
 
 
 class MnistCNN(nn.Module):
+    """
+    Input: Nx1x14x14
+    Output: Nx10
+    
+    
+    """
 
     def __init__(self):
         super().__init__()
