@@ -2,6 +2,55 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class BigNaive(nn.Module):
+    
+    def __init__(self, mode='train'):
+        super().__init__()
+        
+        if mode=='train': 
+            self.p = 0.5
+        if mode=='eval':
+            self.p = 0.0
+        
+        self.sequence = nn.Sequential(
+            nn.Conv2d(2, 32, kernel_size=3),
+            nn.ReLU(),
+            nn.BatchNorm2d(32),
+            nn.Dropout(self.p/3),
+            
+            nn.Conv2d(32, 64, kernel_size=3),
+            nn.ReLU(),
+            nn.BatchNorm2d(64),
+            nn.Dropout(self.p/2),
+            
+            nn.Conv2d(64, 64, kernel_size=3),
+            nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
+            nn.ReLU(),
+            nn.ReLU(),
+            nn.BatchNorm2d(64),
+            nn.Dropout(self.p),
+            
+            nn.Conv2d(64, 64, kernel_size=3),
+            nn.MaxPool2d(kernel_size=(2,2),stride=(2,2)),
+            nn.BatchNorm2d(64),
+            nn.Dropout(self.p),
+            nn.Flatten(),
+            
+            nn.Linear(64, 16),
+            nn.ReLU(),
+            nn.BatchNorm1d(16),
+            
+            nn.Linear(16, 2)
+        )
+        
+        self.target_type = ["target0"]
+        self.weights_loss = [1]
+        
+    def forward(self,input):
+        output = self.sequence(input)
+        return output
+            
+
 
 class Naive_net(nn.Module):
 
