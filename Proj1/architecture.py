@@ -279,7 +279,10 @@ class CrossArchitecture(nn.Module):
         output1 = torch.cat((output_num1,output_num2,output_naive),dim=1) # shape = (N,22)
         output1 = self.Linear1(output1)
         output1 = self.Linear2(output1) # shape = (N,2)
-        return output1, output2
+        if self.training:
+            return output1, output2
+        else:
+            return output1
 
 class oO_Net(nn.Module):
     """
@@ -356,7 +359,11 @@ class oO_Net(nn.Module):
         output_down = torch.cat((upper_part1,upper_part2,lower_part),dim=1)
         output_down = self.lower_last_sequence(output_down)
         
-        return output_down, output_up
+        if self.training:
+            return output_down, output_up
+
+        else:
+            return output_down
 
 
 class ResNextBlock(nn.Module):
@@ -425,7 +432,10 @@ class LugiaNet(nn.Module):
         full_output = torch.cat(output_Mnist_flat + output_Naive,dim=1)
         out1 = self.final_layer(full_output)
         outputs = [out1] + output_Mnist
-        return tuple(outputs)
+        if self.training:
+            return tuple(outputs)
+        else:
+            return out1
 
 
 

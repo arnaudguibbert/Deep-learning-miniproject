@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
-import matplotlib
 import pandas as pd
 import seaborn as sns
 import numpy as np
@@ -12,13 +11,13 @@ import torchvision.transforms as transform
 
 def train_model(model, train_input, train_target, train_classes,
                 nb_epochs=50, 
-                mini_batch_size = 100, 
+                batch_size = 100, 
                 eta = 0.05):
     """
     Goal:
     Train a given model 
     Inputs:
-    model = nn.Module class object - model you want to train
+    model = nn.Module class object - model to be trained
     train_input = tensor - size (Nx2x14x14) (N number of samples)
                   input of the training datas
     train_target = tensor - size (N) (N number of samples)
@@ -26,10 +25,11 @@ def train_model(model, train_input, train_target, train_classes,
     train_classes = tensor - size (Nx2) (N number of samples)
                     Classes (i.e. numbers) of the two images - belongs to {1,...,10}
     nb_epochs = int - Number of epochs for the training
-    mini_batch_size = int - size of the mini batch size
+    batch_size = int - size of the batches
     eta = float - learning rate 
     Outputs:
     """
+    model.train()
     criterion = nn.CrossEntropyLoss() # Define the loss
     optimizer = torch.optim.Adam(model.parameters(), lr = eta) # Define the optimizer
     # For each output of the model a target type is associated (auxiliary losses)
@@ -37,9 +37,9 @@ def train_model(model, train_input, train_target, train_classes,
     # For each loss a weight is defined
     weights_loss = model.weights_loss
     for epochs in range(nb_epochs):
-        for b in range(0, train_input.size(0), mini_batch_size):
+        for b in range(0, train_input.size(0), batch_size):
             # Compute the output of the model
-            output = model(train_input.narrow(0, b, mini_batch_size))
+            output = model(train_input.narrow(0, b, batch_size))
             # If there is multiple outputs (auxiliary losses)
             if len(target_type) > 1:
                 loss_list = [] # List where the losses will be stored
@@ -49,12 +49,12 @@ def train_model(model, train_input, train_target, train_classes,
                     if target == "target0":
                         # Compute the auxiliary loss
                         aux_loss = criterion(output[i], 
-                                             train_target.narrow(0, b, mini_batch_size))
+                                             train_target.narrow(0, b, batch_size))
                     # Target 1 means that the output predicts the classes of the images
                     elif target == "target1":
                         # Compute the auxiliary loss
                         aux_loss = criterion(output[i], 
-                                             train_classes.narrow(0, b, mini_batch_size))
+                                             train_classes.narrow(0, b, batch_size))
                     else:
                         # print Error message
                         return "Unexpected value in the attribute target_type"
@@ -64,7 +64,7 @@ def train_model(model, train_input, train_target, train_classes,
                 loss = sum(loss_list)
             else:
                 # Else if one output : no auxiliary losses
-                loss = criterion(output, train_target.narrow(0, b, mini_batch_size))
+                loss = criterion(output, train_target.narrow(0, b, batch_size))
             model.zero_grad() # Reset the gradient tensors to 0
             loss.backward() # Perform a backward step
             optimizer.step() # Update the weights
@@ -105,7 +105,6 @@ class Cross_validation():
         self.columns = ["run_id","architecture","accuracy","type","epochs"]
         # Create the data frames
         self.columns_time = ["architecture","time","run_id"]
-        self.parameters_count = self.count_params()
         self.datatime = pd.DataFrame([[1e20,1e20,1e20]],columns=self.columns_time)
         self.dataframe = pd.DataFrame([[1e20,1e20,1e20,1e20,1e20]],columns=self.columns)
         # Load the the data set
@@ -116,9 +115,9 @@ class Cross_validation():
         self.train_input, self.train_target, self.train_classes = data[0], data[1], data[2]
         self.test_input, self.test_target, self.test_classes = data[3], data[4], data[5]
         self.steps = steps # Get Granularity for the graphs
-        self.ratio_valid = 0.4
         # Row format for the logs
         self.row_format = '{:<20}{:<15}{:<25}{:<25}{:<15}' # Define the display format
+        self.data_count = None
         #store it to see plot where the model fail, random initialisation
         self.errors_img = torch.empty(0,1) # torch.empty() marche aussi ?
         self.errors_target = torch.empty(0,1)
@@ -128,11 +127,11 @@ class Cross_validation():
     def count_params(self,save_data=None):
         """
         Goal:
-        Count the number of parameters to be trained for each model. 
+        Count the number of parameters to be trained for each model. Save these datas
+        into the data_architectures folder 
         Inputs:
+        save_data = string - name of the file 
         Outputs:
-        param_count = list of size = number of architectures
-                      Store the number of parameters for each model
         """
         param_count = []
         for i,archi in enumerate(self.architectures):
@@ -142,18 +141,21 @@ class Cross_validation():
                 for params in model.parameters():
                     n_params += params.numel()
             param_count.append(n_params)
+        data_param = torch.tensor(param_count).view(-1,1)
+        index = torch.arange(len(self.architectures)).view(-1,1)
+        data_param = torch.cat((index,data_param),dim=1)
+        self.data_count = data_param
         if save_data is not None:
-            data_param = np.array(self.archi_names + param_count).T
-            param_pd = pd.DataFrame(data_param,columns=["Architectures","Number of parameters"])
+            param_pd = pd.DataFrame(data_param.tolist(),
+                                    columns=["Architectures index","Number of parameters"])
             param_pd.to_csv("data_architectures/param_count" + save_data + ".csv",index=False)
-        return param_count
 
+################# KEEP ? ###################
     def data_augmentation(self,train_input):
         """
         Augment the data by :Random tilt between [-10,10] degree and RandomErasing 
         p – probability that the random erasing operation will be performed.
         scale – range of proportion of erased area against input image.
-        ratio – range of aspect ratio of erased area.
         """
         rotation=transform.RandomRotation((-10,10))
         erasing=transform.RandomErasing(p=0.5, scale=(0.015, 0.015), ratio=(1, 1))
@@ -161,12 +163,35 @@ class Cross_validation():
         train_input_augmented=erasing(tilted_train)
         return tilted_train
 
-    def split_data(self,nb_classes=10,test=False):
+    def index_for_equal_class(self,targets):
         """
-        To be modified to take into account the classes
         Goal:
-        Extract randomly 1000 (size attribute) training and testing data points
+        Determine the indexes to choose such that the classes are balanced 
+        in the data set. A random shuffle is first applied
         Inputs:
+        targets = torch tensor - size N (number of data points)
+                                 label of the data points 
+        Outputs:
+        indexes = torch tensor - size self.size 
+                                 indexes selected
+        """
+        index_class0 = (targets == 0).nonzero().view(-1) # Select the classes
+        index_class1 = (targets == 1).nonzero().view(-1)
+        index_class0 = index_class0[torch.randperm(index_class0.shape[0])] # Shuffle the indexes
+        index_class1 = index_class1[torch.randperm(index_class1.shape[0])] # Shuffle the indexes
+        indexes = torch.cat((index_class0[:self.size//2],index_class1[:self.size//2]))
+        indexes = indexes[torch.randperm(indexes.shape[0])] # Shuffle the final indexes
+        return indexes
+
+
+    def split_data(self,test=False):
+        """
+        Split the data into a train/(validation or test) of size self.size (each set)
+        Preserve the equal class distribution (50% class 0, 50% class 1)
+        Goal:
+        Extract randomly 1000 (size attribute) training and testing/validation data points
+        Inputs:
+        test = specify if you want test data set or validation data set for the second element
         Outputs:
         train_input = tensor - size (1000x2x14x14)
                       input of the training datas
@@ -174,25 +199,29 @@ class Cross_validation():
                        targets - belongs to {0,1}
         train_classes = tensor - size (1000x2)
                         Classes (i.e. numbers) of the two images - belongs to {1,...,10}
-        validation_input = tensor - size (1000x2x14x14)
+        test_input = tensor - size (1000x2x14x14)
                       input of the validation datas
-        validation_target = tensor - size (1000)
+        test_target = tensor - size (1000)
                        targets - belongs to {0,1}
-        validation_classes = tensor - size (1000x2)
+        test_classes = tensor - size (1000x2)
                         Classes (i.e. numbers) of the two images - belongs to {1,...,10}
         """
-        shuffle = torch.randperm(self.train_input.shape[0])
-        index_train = shuffle[:self.size]
-        train_input = self.train_input[index_train]
-        train_target = self.train_target[index_train]
-        train_classes = self.train_classes[index_train]
+        shuffle_index = torch.randperm(self.train_target.shape[0])
+        load = shuffle_index.shape[0]
+        train_input_shuffle = self.train_input[shuffle_index]
+        train_target_shuffle = self.train_target[shuffle_index]
+        train_classes_shuffle = self.train_classes[shuffle_index]
+        index_train = self.index_for_equal_class(train_target_shuffle[:load//2])
+        train_input = train_input_shuffle[index_train]
+        train_target = train_target_shuffle[index_train]
+        train_classes = train_classes_shuffle[index_train]
         if not test:
-            index_test = shuffle[-round(self.ratio_valid*self.size):]
-            test_input = self.train_input[index_test]
-            test_target = self.train_target[index_test]
-            test_classes = self.train_classes[index_test]
+            index_test = self.index_for_equal_class( train_target_shuffle[load//2:]) + load//2
+            test_input = train_input_shuffle[index_test]
+            test_target = train_target_shuffle[index_test]
+            test_classes = train_classes_shuffle[index_test]
         else:
-            index_test = index_train
+            index_test = self.index_for_equal_class(self.test_target)
             test_input = self.test_input[index_test]
             test_target = self.test_target[index_test]
             test_classes = self.test_classes[index_test]
@@ -214,17 +243,12 @@ class Cross_validation():
         model.eval()
         with torch.no_grad(): # Shut down the autograd machinery
             output = model(input) # Compute the output of the model
-            # If the model has auxiliary output
-            if len(model.target_type) > 1: 
-                 # Let's take the real one (by convention the first returned)
-                main_output = output[0] 
-            else:
-                main_output = output
-            _,predicted = torch.max(main_output,dim=1) # Compute the prediction
+            _,predicted = torch.max(output,dim=1) # Compute the prediction
             #compute the error matrix
             errors_matrix = torch.where(target != predicted,1,0)
             # Compute the number of errors
             total_errors = errors_matrix.sum().item()
+            """
             #store the wrong set of image
             errors_index = torch.empty(0,1)
             errors_index = ((errors_matrix == 1).nonzero(as_tuple=True)[0])
@@ -234,13 +258,16 @@ class Cross_validation():
                 #We can see the errors only if the model has it as output
                 self.errors_numbers=torch.argmax(output[1][errors_index],dim=1)
                 self.right_target=target_classes[errors_index]
+            """
             # Compute the accuracy
             accuracy = (1 - total_errors/(target.shape[0]))*100
         model.train()
         return accuracy
 
+    """
     def get_errors(self):
         return self.errors_img, self.errors_target, self.errors_numbers
+    """
 
     def run_one(self,archi_name,test=False):
         """
@@ -331,6 +358,9 @@ class Cross_validation():
         Store the performances of these models in the data frame
         the performances are recorded each "self.step" epochs
         Inputs:
+        test = Boolean - are you validating hyperparameters or perform a final test 
+               on the testing data
+        save_data = string - file name for the data to be stored
         Outputs:
         """
         # Header to be displayed
@@ -365,7 +395,7 @@ class Cross_validation():
     def reset(self):
         """
         Goal:
-        Reset the data frame (warning it will erase its content)
+        Reset the data acquired so far (warning it will erase the content)
         Inputs:
         Outputs:
         """
@@ -382,6 +412,8 @@ class Cross_validation():
         Inputs:
         figure = matplotlib figure - figure where the boxplot will be plotted
         subplot = list of size 3 - location of the boxplot in the figure
+        test = Boolean - are you validating hyperparameters or perform a final test 
+               on the testing data
         Outputs:
         """
         # Set the style
@@ -419,11 +451,13 @@ class Cross_validation():
         Goal:
         Lineplot - Plot the accuracy with respect to the number of epochs
         Plot the accuracy on the train set or on the test set, not both
-        Plot the curves for all architectures
+        Plot these curves for all architectures
         Inputs:
         figure = matplotlib figure - figure where the boxplot will be plotted
         subplot = list of size 3 - location of the boxplot in the figure
-        test = Boolean - True if you want accuracy on test set, False for the train set
+        type_perf = int included in {0,1,2} - 0 if you want to plot the train curves
+                                              1 if you want to plot the validation curves
+                                              2 if you want to plot the test curves
         Outputs:
         """
         # Set the style
@@ -447,32 +481,6 @@ class Cross_validation():
         ax.set_ylabel("Accuracy",fontsize=13)
         ax.legend(handles,labels,fontsize=13)
         ax.set_title(title,fontsize=13)
-
-    def plot_count_param(self,figure,subplot):
-        """
-        Goal:
-        Plot a barplot of the number of parameters of each model
-        Inputs:
-        figure = matplotlib figure - figure where the boxplot will be plotted
-        subplot = list of size 3 - location of the boxplot in the figure
-        Outputs:
-        """
-        # Set the style
-        sns.set_style("darkgrid")
-        col1 = "Number of parameters"
-        cols = [col1,"Architectures"]
-        # Data to be plotted
-        data = np.array([self.parameters_count,self.archi_names]).T
-        df = pd.DataFrame(data,columns=cols)
-        # Convert to numeric
-        df[col1] = pd.to_numeric(df[col1])
-        ax = figure.add_subplot(*subplot) # Define the ax
-        # Plot the graph
-        sns.barplot(data=df,x="Architectures",y="Number of parameters",ax=ax)
-        labels = ax.get_xticklabels()
-        ax.set_xticklabels(labels,fontsize=12)
-        ax.set_xlabel("Architectures",fontsize=13)
-        ax.set_ylabel(col1,fontsize=13)
 
     def plot_time_comparison(self,figure,subplot):
         """
@@ -504,19 +512,20 @@ class Cross_validation():
         Evolution of the accuracy on test set for all architectures
         Boxplot of the performances with respect to the architecture
         Inputs:
+        test = Boolean - are you validating hyperparameters or perform a final test 
+               on the testing data
         Outputs:
         """
         type_perf = test*2 + (not test)*1
         # Create the figure
         fig = plt.figure(figsize=[25,14])
         # Plot the evolution on the train set
-        self.plot_evolution_all(fig,[3,5,(1,3)],type_perf=0)
-        self.plot_count_param(fig,[3,5,(4,5)])
+        self.plot_evolution_all(fig,[2,6,(1,3)],type_perf=0)
         # Plot the evolution on the test set
-        self.plot_evolution_all(fig,[3,5,(6,10)],type_perf=type_perf)
-        self.plot_time_comparison(fig,[3,5,(14,15)])
+        self.plot_evolution_all(fig,[2,6,(4,6)],type_perf=type_perf)
+        self.plot_time_comparison(fig,[2,6,(11,12)])
         # Plot the boxplot
-        self.plot_std(fig,[3,5,(11,13)],test=test)
+        self.plot_std(fig,[2,6,(7,10)],test=test)
         plt.subplots_adjust(wspace=0.5,hspace=0.3)
         if save_folder is not None:
             file_name = "final_plot_" + "validation"*(not test) + test*"test" + ".svg"

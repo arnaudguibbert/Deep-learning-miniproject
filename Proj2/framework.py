@@ -35,7 +35,8 @@ class FrameworkModule():
         Replace the parameters of the model by the new parameters
         Inputs:
         new_params = dict - dictionary having, at least, as key the module itself. The value associated
-                     to this key is a list containing the new parameters 
+                     to this key is a list containing the new parameters tensor. If the model is parameter-less
+                     then the key value is None
         Outputs:
         """
         pass
@@ -66,11 +67,12 @@ class FrameworkModule():
         Return the parameters of the module and the associated gradients
         Inputs:
         Outputs:
-        dict - dictionnary having as key the module instance itself and the value is an other 
-               dictionnary having as key "par" and "grdpar", and as value a list of the parameters of
-               the model and the corresponding gradients
+        dict - dictionnary having as key the module instance itself and the value is a list of size 2
+               the first element is the tensor corresponding to the parameters of the model, and the second
+               is the associated gradient tensor. If the model is parameter-less then these last elements 
+               are replaced by None
         """
-        return {self:{"par":[],"grdpar":[]}}
+        return {self:[None,None]}
 
 #################### Linear class #################### 
 class Linear(FrameworkModule):
@@ -85,19 +87,16 @@ class Linear(FrameworkModule):
         Outputs:
         """
         super().__init__()
-        # Initialize the weights and the associated gradient with Xavier Initialisation
         xavier = math.sqrt(6/(in_size+out_size))
-        self.weights = empty(out_size,in_size).uniform_(-xavier,xavier)
-        # Initialize the weights to 0
-        self.grdweights = empty(out_size,in_size).fill_(0)
-        if add_bias: 
-            # Initialize the bias at 0
-            self.bias = empty(out_size,1).fill_(0) 
-            self.grdbias = empty(out_size,1).fill_(0)
-        else:
-            # Else set it to None
-            self.bias = None
-            self.grdbias = None
+        if add_bias:
+            # Initialize the weights and the associated gradient with Xavier Initialisation
+            self.weights = empty(out_size,in_size+1).uniform_(-xavier,xavier)
+        else: 
+            # Initialize the weights and the associated gradient with Xavier Initialisation
+            self.weights = empty(out_size,in_size).uniform_(-xavier,xavier)
+        # Initialize the gradients to 0
+        self.grdweights = empty(self.weights.shape).fill_(0)
+        self.bias = add_bias
         # Initialize the inputs attribute
         self.inputs = []
             
@@ -111,13 +110,16 @@ class Linear(FrameworkModule):
         Outputs:
         output = torch tensor - size NxDout (N number of datapoints, Dout output size of the layer)
         """
+        # Compute the output
+        if self.bias:
+            inputs_ext = empty(inputs.shape[0],inputs.shape[1] + 1).fill_(1)
+            inputs_ext[:,:-1] = inputs
+        else:
+            inputs_ext = inputs.clone()
+        output = inputs_ext@(self.weights.T)
         # Store the input into the input attribute (will be useful for the backward step)
         if not no_grad:
-            self.inputs.append(inputs) 
-        # Compute the output
-        output = inputs@(self.weights.T)
-        if self.bias is not None:
-            output += self.bias.T # Add bias
+            self.inputs.append(inputs_ext) 
         return output
         
     def backward(self,grdwrtoutput):
@@ -133,13 +135,13 @@ class Linear(FrameworkModule):
         if len(self.inputs) == 0:
             return "Forward step has not been performed"
         inputs = self.inputs.pop()
-        # Compute the gradient with respect to the input and accumulate
-        grdwrtinput = grdwrtoutput@self.weights 
-        # Compute the gradient with respect to the weights
+        # Compute the gradient with respect to the input
+        if self.bias:
+            grdwrtinput = grdwrtoutput@(self.weights[:,:-1])
+        else:
+            grdwrtinput = grdwrtoutput@self.weights 
+        # Compute the gradient with respect to the weights and accumulate
         self.grdweights += (grdwrtoutput.T)@inputs
-        if self.bias is not None:
-            # Compute the gradient with respect to the bias and accumulate
-            self.grdbias += grdwrtoutput.sum(dim=0).view(-1,1)
         return grdwrtinput
     
     def zero_grad(self):
@@ -151,21 +153,17 @@ class Linear(FrameworkModule):
         """
         # Reset the gradient tensors
         self.grdweights = empty(self.weights.shape).fill_(0)
-        if self.bias is not None:           
-            self.grdbias = empty(self.bias.shape).fill_(0)
-        
+
     def update(self,new_params):
         """
         Goal:
         Replace the parameters of the model (weights and bias) by the new parameters
         Inputs:
         new_params = dict - dictionary having at least as key the module itself. The value associated
-                     to this keep is a list containing the new weight and bias tensors 
+                     to this keep is a list containing the new parameters tensor
         Outputs:
         """
-        self.weights = new_params[self][0]
-        if len(new_params[self]) > 1:
-            self.bias = new_params[self][1]
+        self.weights = new_params[self]
         
     def reset(self):
         """
@@ -174,13 +172,12 @@ class Linear(FrameworkModule):
         Inputs:
         Outputs:
         """
-        in_size, out_size = self.weights.shape # Get the shape of the layer
+        out_size, in_size = self.weights.shape # Get the shape of the layer
+        if self.bias:
+            in_size -= 1
         xavier = math.sqrt(6/(in_size+out_size)) # Xavier Initialization
         # Reset the weights
         self.weights = empty(self.weights.shape).uniform_(-xavier,xavier)
-        if self.bias is not None:
-            # Reset the bias
-            self.bias = empty(self.bias.shape).fill_(0)
         # Set gradients to 0
         self.zero_grad()
         # Reset the inputs to None
@@ -193,17 +190,11 @@ class Linear(FrameworkModule):
         Return the parameters of the module and the associated gradients
         Inputs:
         Outputs:
-        dict - dictionnary having as key the module instance itself and the value is an other 
-               dictionnary having as key "par" and "grdpar", and as value a list of the parameters of
-               the model and the corresponding gradients
+        dic - dictionnary having as key the module instance itself and the value is a list of size 2
+              the first element is the tensor corresponding to the weights and bias of the module, and the second
+              is the associated gradient tensor.
         """
-        if self.bias is None:
-            param = [self.weights] # Get the weights
-            grdparam = [self.grdweights] # Get the gradient
-        else:
-            param = [self.weights,self.bias] # To be modified
-            grdparam = [self.grdweights,self.grdbias] # To be modified
-        return {self:{"par":param,"grdpar":grdparam}}
+        return {self:[self.weights,self.grdweights]}
 
 #################### MSELoss class #################### 
 
@@ -454,7 +445,7 @@ class Sequential(FrameworkModule):
         Replace the parameters of the model by the new parameters
         Inputs:
         new_params = dict - dictionary having as key the modules of the sequence. The value associated
-                     to these keys are lists containing the new parameters 
+                     to these keys are tensors containing the new parameters 
         Outputs:
         """
         for module in new_params:
@@ -488,9 +479,9 @@ class Sequential(FrameworkModule):
         Return the parameters of the module and the associated gradients
         Inputs:
         Outputs:
-        dict - dictionnary having as key the modules of the sequence. The values associated
-               are dictionnary where the keys are "par" and "grdpar" and the values are the parameters
-               and the corresponding gradients
+        dict - dictionnary having as key the module instances of the sequence and the values are list of size 2:
+               the first element is the tensor corresponding to the parameters of the module, and the second
+               is the associated gradient tensor.
         """
         # Initialize the list of all parameters
         dic_params = {}
@@ -518,14 +509,14 @@ class Optim():
         Goal: 
         Compute new parameters using gradient descent
         Inputs: 
-        param = list of tensor - list of tensors containing parameters 
-        grdparam = list of tensor - list of tensors containing corresponding gradients
+        param = torch tensor - tensor containing parameters 
+        grdparam = torch tensor - tensor containing corresponding gradients
         Outputs:
         """
-        if len(param) == 0:
+        if param is None or grdparam is None:
             new_param = []
         else:
-            new_param = [par - self.lr*grdparam[i] for i,par in enumerate(param)]
+            new_param = param - self.lr*grdparam
         return new_param
 
     def optimize(self):
@@ -538,7 +529,7 @@ class Optim():
         params = self.model.params # Get the current parameters
         new_params = {}
         for mod_param in params:
-            par = params[mod_param]["par"]
-            grdpar = params[mod_param]["grdpar"]
+            par = params[mod_param][0]
+            grdpar = params[mod_param][1]
             new_params[mod_param] = self.grad_descent(par,grdpar) # Compute new parameters
         self.model.update(new_params)
