@@ -63,6 +63,17 @@ def train_pytorch_model(model,train_inputs,train_targets,
             model.zero_grad()
             loss.backward()
             optimizer.step()
+            
+def compute_nb_errors_torch(model, data_input, data_target):
+    """
+    Computes the number of errors
+    """
+    output = model(data_input) # Output of the model
+    output[output < 0] = -1 # Convert to labels
+    output[output >= 0] = 1
+    nb_errors = ((data_target != output)*1).sum()
+    accuracy = (1 - nb_errors/data_input.shape[0])*100
+    return accuracy.item()
 
 def generate_images(train_set,train_target,
                     model,model_torch,steps,
