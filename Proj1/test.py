@@ -70,8 +70,8 @@ if best_hyper_Oonet is not None and best_hyper_Lugianet is not None:
     Test_algo.run_all(test=True)
 
     fig_test = plt.figure(figsize=[14,7])
-    Test_algo.plot_evolution_all(fig,[1,2,1],type_perf=2)
-    Test_algo.plot_std(fig,[1,2,2],test=True)
+    Test_algo.plot_evolution_all(fig_test,[1,2,1],type_perf=2)
+    Test_algo.plot_std(fig_test,[1,2,2],test=True)
     fig_test.savefig("figures/test_set_final.svg")
 
     print("The final results are available in the figures folder")
