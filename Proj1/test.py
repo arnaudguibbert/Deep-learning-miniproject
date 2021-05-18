@@ -88,16 +88,16 @@ if (best_hyper_Oonet is not None and best_hyper_Lugianet is not None) or load_pr
     else :
         #Declaration of the model
         pretrained_oO_Net=oO_Net()
-        #pretrained_Lugia=LugiaNet()
+        pretrained_Lugia=LugiaNet(3)
         pretrained_BigNaive=BigNaive()
 
         #loading of the bias ad weight
         pretrained_oO_Net.load_state_dict(torch.load('model/oO_Net (4,False,[0.2, 0.8])_weights.pth'))
-        #pretrained_Lugia.load_state_dict(torch.load('model/LugiaNet ([])_weights.pth'))
+        pretrained_Lugia.load_state_dict(torch.load('model/LugiaNet (3)_weights.pth'))
         pretrained_BigNaive.load_state_dict(torch.load('model/BigNaive_weights.pth'))
 
         pretrained_oO_Net.eval()
-        #pretrained_Lugia.eval()
+        pretrained_Lugia.eval()
         pretrained_BigNaive.eval()
 
         #We call Cross_validation to use the accuracy and data retrieving function
@@ -107,7 +107,7 @@ if (best_hyper_Oonet is not None and best_hyper_Lugianet is not None) or load_pr
         _, _, _ ,test_input ,test_target ,test_classes=mysave.split_data()
 
         accuracy_oO_Net = mysave.accuracy(pretrained_oO_Net,test_input,test_target,test_classes)
-        #accuracy_Lugia = mysave.accuracy(pretrained_oO_Net,test_input,test_target,test_classes)
+        accuracy_Lugia = mysave.accuracy(pretrained_Lugia,test_input,test_target,test_classes)
         accuracy_BigNaive = mysave.accuracy(pretrained_BigNaive,test_input,test_target,test_classes)
         print("Obtained accuracy for this test dataset :\n")
-        print(" oO_Net: {}\n Lugia : to save when it's working\n BigNaive :{}\n".format(accuracy_oO_Net,accuracy_BigNaive))
+        print(" oO_Net: {}\n Lugia : {}\n BigNaive :{}\n".format(accuracy_oO_Net,accuracy_Lugia,accuracy_BigNaive))
