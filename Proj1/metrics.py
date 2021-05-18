@@ -3,11 +3,36 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import numpy as np
 from time import perf_counter
 from dlc_practical_prologue import generate_pair_sets
 import torchvision.transforms as transform
 
+def normalize(data,mean=None,std=None):
+    """
+    Goal:
+    Normalize the data - idest substracting the mean, divide by the standard deviation
+    Inputs:
+    data = torch tensor - size Nx2xHxW (N number of data points, H height of the image, W width of the image)
+           the first column of the data shall be the classes
+    mean = torch tensor - size 1x2xHxW (H height of the image, W width of the image)
+           if the mean tensor is passed, then it will directly use this mean tensor instead of computing it
+    std = torch tensor - size 1x2xHxW (H height of the image, W width of the image)
+          if the std tensor is passed, then it will directly use this std tensor instead of computing it
+    Outputs:
+    data = torch tensor - size Nx2xHxW (N number of data points, H height of the image, W width of the image)
+           Normalized data
+    mean = torch tensor - size 1x2xHxW (H height of the image, W width of the image)
+           Mean of the data, or mean passed as argument
+    std = torch tensor - size 1x2xHxW (H height of the image, W width of the image)
+          standard deviation of the data, or std passed as argument
+    """
+    if mean is None:
+        mean = torch.mean(data,dim=0,keepdim=True) # Compute the mean
+    if std is None: 
+        std = torch.std(data,dim=0,keepdim=True) # Compute the std
+    norm_data = data.copy() 
+    norm_data = (norm_data - mean)/std # Normalize
+    return norm_data, mean, std
 
 def train_model(model, train_input, train_target, train_classes,
                 nb_epochs=50, 
@@ -188,6 +213,7 @@ class Cross_validation():
         """
         Split the data into a train/(validation or test) of size self.size (each set)
         Preserve the equal class distribution (50% class 0, 50% class 1)
+        Normalize the input datas
         Goal:
         Extract randomly 1000 (size attribute) training and testing/validation data points
         Inputs:
@@ -225,6 +251,8 @@ class Cross_validation():
             test_input = self.test_input[index_test]
             test_target = self.test_target[index_test]
             test_classes = self.test_classes[index_test]
+        train_input, mean, std = normalize(train_input)
+        test_input, _, _ = normalize(test_input,mean,std)
         return train_input, train_target, train_classes ,test_input ,test_target ,test_classes
 
     def accuracy(self,model,input,target,target_classes):

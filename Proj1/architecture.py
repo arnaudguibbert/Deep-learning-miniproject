@@ -375,6 +375,9 @@ class ResNextBlock(nn.Module):
             sequence = nn.Sequential(
                 nn.Conv2d(2,2,kernel_size=(3,3),padding=(1,1)),
                 nn.BatchNorm2d(2),
+                nn.ReLU(),
+                nn.Conv2d(2,2,kernel_size=(3,3),padding=(1,1)),
+                nn.BatchNorm2d(2),
                 nn.ReLU()
             )
             self.blocks.append(sequence)
