@@ -397,7 +397,7 @@ class LugiaNet(nn.Module):
         self.weights_loss = [0.4,0.3,0.3]
         self.resblock = [ResNextBlock() for i in range(0,n_block)]
         self.Mnist = MnistCNN()
-        self.final_layer = nn.Linear(56,2)
+        self.final_layer = nn.Linear(112,2)
         self.Naive = Naive_net().sequence[:11]
         self.post_naive_sequence = nn.Sequential(
             nn.Linear(128,32),
