@@ -121,10 +121,10 @@ def std_accuracy(data_path,save_data=None):
     "data_architectures/metrics" + save_data + ".csv"
     for i,archi in enumerate(unique_archi):
         data_archi = data[data[:,1] == archi]
-        new_data[i,1] = np.mean(data_archi[data_archi[:,-2] == 2,2])
-        new_data[i,2] = np.std(data_archi[data_archi[:,-2] == 2:,2])
-        new_data[i,3] = np.mean(data_archi[data_archi[:,-2] == 1,2])
-        new_data[i,4] = np.std(data_archi[data_archi[:,-2] == 1:,2])
+        new_data[i,1] = np.mean(int(data_archi[data_archi[:,-2]) == 2,2])
+        new_data[i,2] = np.std(int(data_archi[data_archi[:,-2]) == 2:,2])
+        new_data[i,3] = np.mean(int(data_archi[data_archi[:,-2]) == 1,2])
+        new_data[i,4] = np.std(int(data_archi[data_archi[:,-2]) == 1:,2])
         row_display = [int(archi),
                        round(new_data[i,1],2),
                        round(new_data[i,2],2),
