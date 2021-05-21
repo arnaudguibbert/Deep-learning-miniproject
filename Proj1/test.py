@@ -8,7 +8,7 @@ import time
 # Specify the parameters you want 
 
 
-max_epochs = 30
+max_epochs = 100
 granularity = 2
 runs = 15
 
@@ -20,7 +20,7 @@ best_hyper_Lugianet = None#[3]
 #True if we want to retrain our model for multiple hyperameter
 find_hyperparameters = True
 #oO_Net hyperparameter : [embedded dimension of naive net,Use Resnet,[weight_loss]]
-valid_Oo_args = [[1,4,False,[0.2, 0.8]],[1,4,True,[0.2, 0.8]],[2,4,True,[0.2, 0.8]],[3,4,True,[0.2, 0.8]]]
+valid_Oo_args = [[1,4,True,[0.2, 0.8]]]
 valid_Lugia_args = None#[[3]]
 
 # Let the code do the rest
@@ -60,9 +60,9 @@ if find_hyperparameters:
                                             steps=granularity,runs=runs)
         validation_Oo.run_all(save_data="validation_Oo",test=False)
 
-        fig = plt.figure(figsize=[14,7])
-        validation_Oo.plot_std(fig,[1,1,1],test=False)
-        fig.savefig("figures/boxplot_validation_OoNet.svg")
+        #fig = plt.figure(figsize=[14,7])
+        #validation_Oo.plot_std(fig,[1,1,1],test=False)
+        #fig.savefig("figures/boxplot_validation_OoNet.svg")
 
 # Evaluate the performances on the test set
 if (best_hyper_Oonet is not None and best_hyper_Lugianet is not None) or load_pretrain==True:
@@ -79,10 +79,10 @@ if (best_hyper_Oonet is not None and best_hyper_Lugianet is not None) or load_pr
 
         Test_algo.run_all(test=True)
 
-        fig_test = plt.figure(figsize=[14,7])
-        Test_algo.plot_evolution_all(fig_test,[1,2,1],type_perf=2)
-        Test_algo.plot_std(fig_test,[1,2,2],test=True)
-        fig_test.savefig("figures/test_set_final.svg")
+        #fig_test = plt.figure(figsize=[14,7])
+        #Test_algo.plot_evolution_all(fig_test,[1,2,1],type_perf=2)
+        #Test_algo.plot_std(fig_test,[1,2,2],test=True)
+        #fig_test.savefig("figures/test_set_final.svg")
 
         print("The final results are available in the figures folder")
     else :
