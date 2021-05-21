@@ -8,20 +8,20 @@ import time
 # Specify the parameters you want 
 
 
-max_epochs = 30
+max_epochs = 100
 granularity = 2
 runs = 15
 
 #True for loading pretrain and compute accuracy over a random test dataset, else it retrain the best hyperparameters
-load_pretrain=True
-best_hyper_Oonet = [4,False,[0.2, 0.8]]
+load_pretrain=False
+best_hyper_Oonet = [2,False,[0.2, 0.8]]
 best_hyper_Lugianet = [3]
 
 #True if we want to retrain our model for multiple hyperameter
-find_hyperparameters = False
+find_hyperparameters = True
 #oO_Net hyperparameter : [embedded dimension of naive net,Use Resnet,[weight_loss]]
-valid_Oo_args = [[[0.01,0.99]],[[0.1,0.9]],[[0.3,0.7]],[[0.5,0.5]],[[0.7,0.3]],[[0.9,0.1]],[[0.99,0.01]]]
-valid_Lugia_args = None
+valid_Oo_args = None#[[4,False,[0.2, 0.8]],[4,True,[0.2, 0.8]]]
+valid_Lugia_args = [[3]]
 
 # Let the code do the rest
 directories = ["figures","data_architectures"]
@@ -68,9 +68,9 @@ if find_hyperparameters:
 if (best_hyper_Oonet is not None and best_hyper_Lugianet is not None) or load_pretrain==True:
     if load_pretrain ==False :
         # Architectures to test on the test set 
-        final_architectures = [LugiaNet,oO_Net,BigNaive]
+        final_architectures = [oO_Net,BigNaive]
         # List of the best hyperparameters found so far
-        final_args = [best_hyper_Lugianet,best_hyper_Oonet,[]]
+        final_args = [best_hyper_Oonet,[]]
         # Initialize the cross validation to determine the hyperparameters of some architectures
         Test_algo = Cross_validation(final_architectures,
                                     final_args,
