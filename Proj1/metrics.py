@@ -109,23 +109,27 @@ def std_accuracy(data_path,save_data=None):
     Inputs:
     Outputs:
     """
-    columns = ["Architecture index","Mean","Std"]
-    row_format = '{:<20}{:<15}{:<15}'
+    columns = ["Architecture index","Mean test","Std test","Mean train","Std train"]
+    row_format = '{:<20}{:<15}{:<15}{:<15}{:<15}'
     data = np.genfromtxt(data_path,delimiter=",",skip_header=1).astype(float)
     max_epochs = np.max(data[:,-1])
     data = data[data[:,-1] == max_epochs]
     unique_archi = np.unique(data[:,1])
-    new_data = np.zeros((unique_archi.shape[0],3))
+    new_data = np.zeros((unique_archi.shape[0],5))
     new_data[:,0] = unique_archi
     print(row_format.format(*columns))
     "data_architectures/metrics" + save_data + ".csv"
     for i,archi in enumerate(unique_archi):
         data_archi = data[data[:,1] == archi]
-        new_data[i,1] = np.mean(data_archi[:,2])
-        new_data[i,2] = np.std(data_archi[:,2])
+        new_data[i,1] = np.mean(data_archi[data_archi[:,-2] == 2,2])
+        new_data[i,2] = np.std(data_archi[data_archi[:,-2] == 2:,2])
+        new_data[i,3] = np.mean(data_archi[data_archi[:,-2] == 1,2])
+        new_data[i,4] = np.std(data_archi[data_archi[:,-2] == 1:,2])
         row_display = [int(archi),
                        round(new_data[i,1],2),
-                       round(new_data[i,2],2)]
+                       round(new_data[i,2],2),
+                       round(new_data[i,3],2),
+                       round(new_data[i,4],2)]
         print(row_format.format(*row_display))
     if save_data is not None:
         name_file = "data_architectures/metrics" + save_data + ".csv"
