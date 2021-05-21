@@ -20,7 +20,7 @@ runs = 2
 
 # True for loading pretrain and compute accuracy over a random test dataset, else it retrain the best hyperparameters
 load_pretrain = False
-best_hyper_Oonet = [2,False,[0.2, 0.8]]
+best_hyper_Oonet = [1,2,False,[0.2, 0.8]]
 best_hyper_Lugianet = [3]
 
 #True if we want to retrain our model for multiple hyperameter
