@@ -1,6 +1,5 @@
 from utils import train_model
 import os 
-import framework as frw
 from utils import generate_disc_set, create_model, assess_model
 from pytorchNet import generate_contours
 import seaborn as sns
@@ -41,9 +40,4 @@ if contour:
     print("Generate countour \n")
     model = create_model()
     train_model(model,train_inputs,train_targets,epochs=epochs_contour)
-
     generate_contours(model,epochs=epochs_contour,save_fig="frw_contour")
-
-
-                    
-

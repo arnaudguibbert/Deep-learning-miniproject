@@ -1,11 +1,18 @@
+from pandas.core.algorithms import unique
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
+try:
+    import pandas as pd
+except ModuleNotFoundError:
+    pass
+try:
+    import seaborn as sns
+except:
+    pass
+import numpy as np
 from time import perf_counter
 from dlc_practical_prologue import generate_pair_sets
-import torchvision.transforms as transform
 
 def normalize(data,mean=None,std=None):
     """
@@ -33,10 +40,8 @@ def normalize(data,mean=None,std=None):
         std = torch.std(data,dim=0,keepdim=True) # Compute the std
     #std=torch.where(std==0.0,0.1,std  )
     norm_data = data.clone() 
+    std = torch.where(std==0,1.,std.double()).float()
     norm_data = (norm_data - mean)/std # Normalize
-    #Replace Nan value due to 0 division by 0
-    norm_data=torch.where(norm_data.isnan(),0.,norm_data.double()).float()
-    #print(norm_data)
     return norm_data, mean, std
 
 def train_model(model, train_input, train_target, train_classes,
@@ -99,6 +104,34 @@ def train_model(model, train_input, train_target, train_classes,
             loss.backward() # Perform a backward step
             optimizer.step() # Update the weights
 
+def std_accuracy(data_path,save_data=None):
+    """
+    Goal:
+    Inputs:
+    Outputs:
+    """
+    columns = ["Architecture index","Mean","Std"]
+    row_format = '{:<20}{:<15}{:<15}'
+    data = np.genfromtxt(data_path,delimiter=",",skip_header=1).astype(float)
+    max_epochs = np.max(data[:,-1])
+    data = data[data[:,-1] == max_epochs]
+    unique_archi = np.unique(data[:,1])
+    new_data = np.zeros((unique_archi.shape[0],3))
+    new_data[:,0] = unique_archi
+    print(row_format.format(*columns))
+    "data_architectures/metrics" + save_data + ".csv"
+    for i,archi in enumerate(unique_archi):
+        data_archi = data[data[:,1] == archi]
+        new_data[i,1] = np.mean(data_archi[:,2])
+        new_data[i,2] = np.std(data_archi[:,2])
+        row_display = [int(archi),
+                       round(new_data[i,1],2),
+                       round(new_data[i,2],2)]
+        print(row_format.format(*row_display))
+    if save_data is not None:
+        name_file = "data_architectures/metrics" + save_data + ".csv"
+        np.savetxt(name_file,new_data,delimiter=",",header = ",".join(columns))
+
 
 class Cross_validation():
 
@@ -106,7 +139,7 @@ class Cross_validation():
                  architectures,
                  args,
                  steps=5,
-                 runs=10,load=5000,epochs=50):
+                 runs=10,load=5000,epochs=50,pandas_flag=False):
         """
         Goal:
         Inputs:
@@ -135,8 +168,12 @@ class Cross_validation():
         self.columns = ["run_id","architecture","accuracy","type","epochs"]
         # Create the data frames
         self.columns_time = ["architecture","time","run_id"]
-        self.datatime = pd.DataFrame([[1e20,1e20,1e20]],columns=self.columns_time)
-        self.dataframe = pd.DataFrame([[1e20,1e20,1e20,1e20,1e20]],columns=self.columns)
+        if pandas_flag:
+            self.datatime = pd.DataFrame([[1e20,1e20,1e20]],columns=self.columns_time)
+            self.dataframe = pd.DataFrame([[1e20,1e20,1e20,1e20,1e20]],columns=self.columns)
+        else:
+            self.datatime = np.zeros((0,len(self.columns_time)))
+            self.dataframe = np.zeros((0,len(self.columns)))
         # Load the the data set
         data = generate_pair_sets(load)
         self.size = 1000 # Number of samples used for training and testing at each run
@@ -148,6 +185,7 @@ class Cross_validation():
         # Row format for the logs
         self.row_format = '{:<20}{:<15}{:<25}{:<25}{:<15}' # Define the display format
         self.data_count = None
+        self.pandas_flag = pandas_flag
         #store it to see plot where the model fail, random initialisation
         self.errors_img = torch.empty(0,1) # torch.empty() marche aussi ?
         self.errors_target = torch.empty(0,1)
@@ -176,22 +214,16 @@ class Cross_validation():
         data_param = torch.cat((index,data_param),dim=1)
         self.data_count = data_param
         if save_data is not None:
-            param_pd = pd.DataFrame(data_param.tolist(),
-                                    columns=["Architectures index","Number of parameters"])
-            param_pd.to_csv("data_architectures/param_count" + save_data + ".csv",index=False)
-
-################# KEEP ? ###################
-    def data_augmentation(self,train_input):
-        """
-        Augment the data by :Random tilt between [-10,10] degree and RandomErasing 
-        p – probability that the random erasing operation will be performed.
-        scale – range of proportion of erased area against input image.
-        """
-        rotation=transform.RandomRotation((-10,10))
-        erasing=transform.RandomErasing(p=0.5, scale=(0.015, 0.015), ratio=(1, 1))
-        tilted_train=rotation(train_input)
-        train_input_augmented=erasing(tilted_train)
-        return tilted_train
+            name_file = "data_architectures/param_count" + save_data + ".csv"
+            columns=["Architectures index","Number of parameters"]
+            if self.pandas_flag:
+                param_pd = pd.DataFrame(data_param.tolist(),
+                                        columns=columns)
+                param_pd.to_csv(name_file,index=False)
+            else:
+                data_np = data_param.numpy()
+                print(data_np)
+                np.savetxt(name_file,data_np,delimiter=",",header=",".join(columns))
 
     def index_for_equal_class(self,targets):
         """
@@ -372,7 +404,6 @@ class Cross_validation():
                    round(accuracy_test,1),round(elapsed,1)]
             # Print a message about the performances of the architecture
             print(self.row_format.format(*row))
-        
         #save the model weight
         if save_weight is not None:
             torch.save(model.state_dict(), 'model/{}_weights.pth'.format(archi_name))
@@ -380,11 +411,15 @@ class Cross_validation():
         new_data = new_data[1:]
         new_data_time = new_data_time[1:]
         # Add the new data to the existing data frame
-        df = pd.DataFrame(data=new_data.tolist(),columns=self.columns)
-        self.dataframe = self.dataframe.append(df,ignore_index=True)
-        # Remove the first artificial line of the data frame
-        df_time = pd.DataFrame(data=new_data_time.tolist(),columns=self.columns_time)
-        self.datatime = self.datatime.append(df_time,ignore_index=True)
+        if self.pandas_flag:
+            df = pd.DataFrame(data=new_data.tolist(),columns=self.columns)
+            self.dataframe = self.dataframe.append(df,ignore_index=True)
+            # Remove the first artificial line of the data frame
+            df_time = pd.DataFrame(data=new_data_time.tolist(),columns=self.columns_time)
+            self.datatime = self.datatime.append(df_time,ignore_index=True)
+        else:
+            self.datatime = np.concatenate((self.datatime,new_data_time.numpy()),axis=0)
+            self.dataframe = np.concatenate((self.dataframe,new_data.numpy()),axis=0)
         self.remove_line()
 
     def run_all(self,test=False,save_data=None):
@@ -413,10 +448,21 @@ class Cross_validation():
         for archi_name in self.archi_names:
             self.run_one(archi_name,test=test,save_weight=save_data)
         if save_data is not None:
-            corres_pd = pd.DataFrame(self.archi_names,columns=["Architecture name"])
-            corres_pd.to_csv("data_architectures/corres_index" + save_data + ".csv")
-            self.dataframe.to_csv("data_architectures/accuracy" + save_data + ".csv",index=False)
-            self.datatime.to_csv("data_architectures/time" + save_data + ".csv",index=False)
+            name_file_corres = "data_architectures/corres_index" + save_data + ".csv"
+            name_file_accuracy = "data_architectures/accuracy" + save_data + ".csv"
+            name_file_time = "data_architectures/time" + save_data + ".csv"
+            if self.pandas_flag:
+                corres_pd = pd.DataFrame(self.archi_names,columns=["Architecture name"])
+                corres_pd.to_csv(name_file_corres)
+                self.dataframe.to_csv(name_file_accuracy,index=False)
+                self.datatime.to_csv(name_file_time,index=False)
+            else:
+                np.savetxt(name_file_accuracy,
+                           self.dataframe,delimiter=",",
+                           header=",".join(self.columns))
+                np.savetxt(name_file_time,
+                           self.datatime,delimiter=",",
+                           header=",".join(self.columns_time))
 
     def remove_line(self):
         """
@@ -425,9 +471,10 @@ class Cross_validation():
         Inputs:
         Outputs:
         """
-        # Remove the first line where accuracy was set to 1e20
-        self.dataframe = self.dataframe.query("accuracy < 1e3")
-        self.datatime = self.datatime.query("time < 1e10")
+        if self.pandas_flag:
+            # Remove the first line where accuracy was set to 1e20
+            self.dataframe = self.dataframe.query("accuracy < 1e3")
+            self.datatime = self.datatime.query("time < 1e10")
 
     def reset(self):
         """
@@ -437,8 +484,12 @@ class Cross_validation():
         Outputs:
         """
         # Reset the data frame
-        self.dataframe = pd.DataFrame([[1e20,1e20,1e20,1e20,1e20]],columns=self.columns)
-        self.datatime = pd.DataFrame([[1e20,1e20,1e20]],columns=self.columns_time)
+        if self.pandas_flag:
+            self.dataframe = pd.DataFrame([[1e20,1e20,1e20,1e20,1e20]],columns=self.columns)
+            self.datatime = pd.DataFrame([[1e20,1e20,1e20]],columns=self.columns_time)
+        else:
+            self.dataframe = np.zeros((0,self.dataframe.shape[1]))
+            self.datatime = np.zeros((0,self.datatime.shape[1]))
     
     def plot_std(self,figure,subplot,test=False):
         """
@@ -539,7 +590,6 @@ class Cross_validation():
         ax.set_xticklabels(labels,fontsize=12)
         ax.set_xlabel("Architectures",fontsize=13)
         ax.set_ylabel("Average training time [s]",fontsize=13)
-
 
     def plot_full_comparison(self,test=False,save_folder=None):
         """
