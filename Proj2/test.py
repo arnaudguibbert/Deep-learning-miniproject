@@ -2,7 +2,14 @@ from utils import train_model
 import os 
 from utils import generate_disc_set, create_model, assess_model
 from pytorchNet import generate_contours
-import seaborn as sns
+try:
+    import pandas
+    import seaborn
+    pandas_flag = True
+    print("Pandas and seaborn are installed graphs will be plotted")
+except ModuleNotFoundError:
+    pandas_flag = False
+    print("Pandas or seaborn is not installed, to plot the graphs please install these librairies")
 
 # Specify what you want
 lineplot = True # Full evluation of the model (takes some time)
@@ -30,13 +37,14 @@ inputs, targets = generate_disc_set(2000)
 test_inputs, test_targets = inputs[:1000], targets[:1000]
 train_inputs, train_targets = inputs[1000:], targets[1000:]
 
-sns.set_style("darkgrid")
+if pandas_flag:
+    sns.set_style("darkgrid")
 
 if lineplot:
     print("Assess model performances \n")
     assess_model(create_model,epochs,granularity,
                  run,save_file="frw_evaluation",
-                 save_data="frw_evaluation")
+                 save_data="frw_evaluation",pandas_flag=pandas_flag)
 
 if contour:
     print("Generate countour \n")

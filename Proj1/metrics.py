@@ -7,7 +7,7 @@ except ModuleNotFoundError:
     pass
 try:
     import seaborn as sns
-except:
+except ModuleNotFoundError:
     pass
 import numpy as np
 from time import perf_counter

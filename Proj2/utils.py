@@ -1,8 +1,14 @@
 from math import pi, sqrt
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
-import pandas as pd
+try:
+    import seaborn as sns
+except ModuleNotFoundError:
+    pass
+try:
+    import pandas as pd
+except ModuleNotFoundError:
+    pass  
 from torch import empty
 import framework as frw
 
@@ -96,7 +102,8 @@ def assess_model(model_gen,epochs,
                  granularity,
                  runs=10,
                  save_file=None,
-                 save_data=None):
+                 save_data=None,
+                 pandas_flag=False):
     """
     Goal:
     Assess the performances of an architecture. Evaluate the performances on several data sets
@@ -145,18 +152,25 @@ def assess_model(model_gen,epochs,
         print(row_format.format(*row))
     # Convert into a pandas data set
     columns = ["Run","Accuracy","Epochs","type"]
-    data_pd = pd.DataFrame(np_data,columns=columns)
-    # Plot the graph
-    fig = plt.figure(figsize=[10,5])
-    ax = fig.add_subplot(1,1,1)
-    sns.set_style("darkgrid")
-    sns.lineplot(data=data_pd,x="Epochs",y="Accuracy",ax=ax,hue="type")
-    ax.set_title("Accuracy evolution",fontsize=14)
-    handles, labels = ax.get_legend_handles_labels()
-    labels = [(i == "0.0")*"train" + (i == "1.0")*"test" for i in labels]
-    ax.legend(handles,labels,title="Set",loc="lower right")
+    if pandas_flag:
+        data_pd = pd.DataFrame(np_data,columns=columns)
+        # Plot the graph
+        fig = plt.figure(figsize=[10,5])
+        ax = fig.add_subplot(1,1,1)
+        sns.set_style("darkgrid")
+        sns.lineplot(data=data_pd,x="Epochs",y="Accuracy",ax=ax,hue="type")
+        ax.set_title("Accuracy evolution",fontsize=14)
+        handles, labels = ax.get_legend_handles_labels()
+        labels = [(i == "0.0")*"train" + (i == "1.0")*"test" for i in labels]
+        ax.legend(handles,labels,title="Set",loc="lower right")
     # Save the files 
-    if save_file is not None:
-        fig.savefig("figures/" + save_file + ".svg",dpi=200)
+        if save_file is not None:
+            fig.savefig("figures/" + save_file + ".svg",dpi=200)
     if save_data is not None:
-        data_pd.to_csv("data/" + save_data +".csv")
+        name_file = "data/" + save_data +".csv"
+        if pandas_flag:
+            data_pd.to_csv(name_file)
+        else:
+            np.savetxt(name_file,np_data,
+                       delimiter=",",
+                       header=",".join(columns))
