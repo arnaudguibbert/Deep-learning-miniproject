@@ -121,10 +121,10 @@ def std_accuracy(data_path,save_data=None):
     "data_architectures/metrics" + save_data + ".csv"
     for i,archi in enumerate(unique_archi):
         data_archi = data[data[:,1] == archi]
-        new_data[i,1] = np.mean(int(data_archi[data_archi[:,-2]) == 2,2])
-        new_data[i,2] = np.std(int(data_archi[data_archi[:,-2]) == 2:,2])
-        new_data[i,3] = np.mean(int(data_archi[data_archi[:,-2]) == 1,2])
-        new_data[i,4] = np.std(int(data_archi[data_archi[:,-2]) == 1:,2])
+        new_data[i,1] = np.mean(data_archi[data_archi[:,-2] == 2,2])
+        new_data[i,2] = np.std(data_archi[data_archi[:,-2] == 2,2])
+        new_data[i,3] = np.mean(data_archi[data_archi[:,-2] == 0,2])
+        new_data[i,4] = np.std(data_archi[data_archi[:,-2] == 0,2])
         row_display = [int(archi),
                        round(new_data[i,1],2),
                        round(new_data[i,2],2),
@@ -186,7 +186,7 @@ class Cross_validation():
         self.test_input, self.test_target, self.test_classes = data[3], data[4], data[5]
         self.steps = steps # Get Granularity for the graphs
         # Row format for the logs
-        self.row_format = '{:<20}{:<15}{:<25}{:<25}{:<15}' # Define the display format
+        self.row_format = '{:<30}{:<10}{:<20}{:<20}{:<15}' # Define the display format
         self.data_count = None
         self.pandas_flag = pandas_flag
         #store it to see plot where the model fail, random initialisation

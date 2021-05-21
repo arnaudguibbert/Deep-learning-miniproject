@@ -16,7 +16,7 @@ import time
 # Specify the parameters you want 
 max_epochs = 10
 granularity = 2
-runs = 2
+runs = 5
 
 # True for loading pretrain and compute accuracy over a random test dataset, else it retrain the best hyperparameters
 load_pretrain = False
