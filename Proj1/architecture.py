@@ -295,14 +295,15 @@ class oO_Net(nn.Module):
     Information is shared between both arms by concatenation or summation
     """
     
-    def __init__(self, embedded_dim=4,use_MnistResNet=False,weights_loss=[0.5,0.5]):
+    def __init__(self, Nb_ResBlocks=1,embedded_dim=4,use_MnistResNet=False,weights_loss=[0.5,0.5]):
         super().__init__()
         self.target_type = ["target0","target1"]
         self.weights_loss = weights_loss
         self.emb_dim=embedded_dim
+        self.Nb_ResBlocks=Nb_ResBlocks
 
         if use_MnistResNet:
-            nb_blocks = MnistResNet().nb_blocks
+            nb_blocks = self.Nb_ResBlocks
             self.Mnist_part = MnistResNet().sequence[:13+nb_blocks] # out shape = (N,64,2)
         else:
             self.Mnist_part = MnistCNN().sequence[:24] # out shape = (N,64,2)

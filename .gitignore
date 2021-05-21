@@ -26,6 +26,10 @@
 *.sql
 *.sqlite
 
+#   figures proj2    #
+######################
+
+
 # OS generated files #
 ######################
 .DS_Store

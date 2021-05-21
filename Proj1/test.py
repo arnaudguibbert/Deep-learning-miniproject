@@ -8,20 +8,20 @@ import time
 # Specify the parameters you want 
 
 
-max_epochs = 100
+max_epochs = 30
 granularity = 2
 runs = 15
 
 #True for loading pretrain and compute accuracy over a random test dataset, else it retrain the best hyperparameters
 load_pretrain=False
-best_hyper_Oonet = [2,False,[0.2, 0.8]]
-best_hyper_Lugianet = [3]
+best_hyper_Oonet = None#[2,False,[0.2, 0.8]]
+best_hyper_Lugianet = None#[3]
 
 #True if we want to retrain our model for multiple hyperameter
 find_hyperparameters = True
 #oO_Net hyperparameter : [embedded dimension of naive net,Use Resnet,[weight_loss]]
-valid_Oo_args = None#[[4,False,[0.2, 0.8]],[4,True,[0.2, 0.8]]]
-valid_Lugia_args = [[3]]
+valid_Oo_args = [[1,4,False,[0.2, 0.8]],[1,4,True,[0.2, 0.8]],[2,4,True,[0.2, 0.8]],[3,4,True,[0.2, 0.8]]]
+valid_Lugia_args = None#[[3]]
 
 # Let the code do the rest
 directories = ["figures","data_architectures"]
