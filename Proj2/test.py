@@ -5,13 +5,15 @@ from pytorchNet import generate_contours
 import seaborn as sns
 
 # Specify what you want
-lineplot = False # Full evluation of the model (takes some time)
+lineplot = True # Full evluation of the model (takes some time)
 contour = True # Contour prediction of the model
 compare_with_pytorch = False
 
 # Specify the parameters
-run = 10
+run = 3
+#epochs to train the model
 epochs = 10
+#Epochs for ploting evolution of the results
 epochs_contour = 100
 granularity = 1
 

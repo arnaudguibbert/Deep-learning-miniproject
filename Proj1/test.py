@@ -26,8 +26,8 @@ best_hyper_Lugianet = [3]
 #True if we want to retrain our model for multiple hyperameter
 find_hyperparameters = False
 #oO_Net hyperparameter : [embedded dimension of naive net,Use Resnet,[weight_loss]]
-valid_Oo_args = None#[[4,False,[0.2, 0.8]],[4,True,[0.2, 0.8]]]
-valid_Lugia_args = [[3]]
+valid_Oo_args = [[1,4,True,[0.2, 0.8]]]
+valid_Lugia_args = None#[[3]]
 
 # Let the code do the rest
 directories = ["figures","data_architectures"]
@@ -71,6 +71,7 @@ if find_hyperparameters:
             fig = plt.figure(figsize=[14,7])
             validation_Oo.plot_std(fig,[1,1,1],test=False)
             fig.savefig("figures/boxplot_validation_OoNet.svg")
+
 
 # Evaluate the performances on the test set
 if (best_hyper_Oonet is not None and best_hyper_Lugianet is not None) or load_pretrain==True:
