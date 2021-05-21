@@ -50,4 +50,4 @@ if contour:
     print("Generate countour \n")
     model = create_model()
     train_model(model,train_inputs,train_targets,epochs=epochs_contour)
-    generate_contours(model,epochs=epochs_contour,save_fig="frw_contour")
+    generate_contours(model,epochs=epochs_contour,save_file="frw_contour")
