@@ -27,7 +27,7 @@ best_hyper_Lugianet = [3]
 find_hyperparameters = False
 #oO_Net hyperparameter : [embedded dimension of naive net,Use Resnet,[weight_loss]]
 valid_Oo_args = [[1,4,True,[0.2, 0.8]]]
-valid_Lugia_args = None#[[3]]
+valid_Lugia_args = [[3]]
 
 # Let the code do the rest
 directories = ["figures","data_architectures"]
