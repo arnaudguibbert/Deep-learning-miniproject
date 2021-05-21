@@ -17,7 +17,7 @@ contour = True # Contour prediction of the model
 compare_with_pytorch = False
 
 # Specify the parameters
-run = 3
+run = 2
 #epochs to train the model
 epochs = 10
 #Epochs for ploting evolution of the results

@@ -148,7 +148,8 @@ def assess_model(model_gen,epochs,
             row_train = np.array([run,accu_train,epoch,0]).reshape(1,-1)
             row_test = np.array([run,accu_test,epoch,1]).reshape(1,-1)
             np_data = np.concatenate((np_data,row_train,row_test),axis=0)
-        row = [run,row_train[0,1],row_test[0,1]]
+        row = [run,round(row_train[0,1],2),
+               round(row_test[0,1],2)]
         print(row_format.format(*row))
     # Convert into a pandas data set
     columns = ["Run","Accuracy","Epochs","type"]
