@@ -377,9 +377,6 @@ class ResNextBlock(nn.Module):
                 nn.Conv2d(2,2,kernel_size=(3,3),padding=(1,1)),
                 nn.BatchNorm2d(2),
                 nn.ReLU(),
-                nn.Conv2d(2,2,kernel_size=(3,3),padding=(1,1)),
-                nn.BatchNorm2d(2),
-                nn.ReLU()
             )
             self.blocks.append(sequence)
 
@@ -394,52 +391,49 @@ class LugiaNet(nn.Module):
     Input: Nx2x14x14
     Output: (Nx10), (Nx2)
     """
-
-    def __init__(self,n_block):
+    def __init__(self,n_parrallel=2):
         super().__init__()
-        self.target_type = ["target0"] + ["target1" for i in range(n_block)]
-        self.weights_loss = [0.4] + [0.6/n_block]*n_block 
-        self.resblock = [ResNextBlock() for i in range(0,n_block)]
+        self.target_type = ["target0","target1","target1"]
+        self.weights_loss = [0.3,0.4,0.3]
+        self.resblock = ResNextBlock(n_parrallel=n_parrallel)
         self.Mnist = MnistCNN()
-        self.final_layer = nn.Linear(28*(n_block+1),2)
+        self.FC_naive = nn.Sequential(nn.Linear(36,8),
+            nn.ReLU(),
+            nn.BatchNorm1d(8),
+            nn.Linear(8,2))
         self.Naive = Naive_net().sequence[:11]
         self.post_naive_sequence = nn.Sequential(
-            nn.Linear(128,32),
+            nn.Linear(128,16),
             nn.ReLU(),
-            nn.BatchNorm1d(32),
-            nn.Linear(32,8)
+            nn.BatchNorm1d(16),
+            nn.Linear(16,8),
         )
 
     def forward(self,input):
-        output_res = input
-        output_res_list = []
-        for block in self.resblock:
-            output_res = block(output_res)
-            output_res_list.append(output_res)
-        output_Mnist = []
-        output_Naive = []
-        Branch = [input] + output_res_list
+        nb_sample = input.shape[0]
+        height, width = input.shape[2], input.shape[3]
+        output_resblock = self.resblock(input)
+        mnist_input_resblock = output_resblock.reshape(-1,1,
+                                                       height,
+                                                       width)
+        mnist_input_original = input.reshape(-1,1,
+                                             output_resblock.shape[2],
+                                             output_resblock.shape[3])
+        mnist_output_resblock = self.Mnist(mnist_input_resblock).reshape(nb_sample,2,10).permute(0,2,1)
+        mnist_output_original = self.Mnist(mnist_input_original).reshape(nb_sample,2,10).permute(0,2,1)
+        output_naive_original = self.post_naive_sequence(self.Naive(input))
+        output_naive_resblock = self.post_naive_sequence(self.Naive(output_resblock))
+        input_FC_naive = torch.cat((output_naive_original,
+                                    output_naive_resblock,
+                                    mnist_output_original.reshape(-1,20)),dim=1)
+        output_FC_naive = self.FC_naive(input_FC_naive)
 
-        for out in Branch:
-            num1 = out[:,[0],:,:]
-            num2 = out[:,[1],:,:]
-            out_num1 = self.Mnist(num1).view(num1.shape[0],-1,1)
-            out_num2 = self.Mnist(num2).view(num2.shape[0],-1,1)
-            output_f_1 = torch.cat((out_num1,out_num2),dim=2) # shape = (N,10,2)
-            output_Mnist.append(output_f_1)
-
-            output_f_2 = self.Naive(out)
-            output_f_2 = self.post_naive_sequence(output_f_2)
-            output_Naive.append(output_f_2)
-
-        output_Mnist_flat = [out.view(out.shape[0],-1) for out in output_Mnist]
-        full_output = torch.cat(output_Mnist_flat + output_Naive,dim=1)
-        out1 = self.final_layer(full_output)
-        outputs = [out1] + output_Mnist
         if self.training:
-            return tuple(outputs)
+            return output_FC_naive, mnist_output_resblock, mnist_output_original
         else:
-            return out1
+            return output_FC_naive
+
+        
 
 
 

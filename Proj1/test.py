@@ -12,20 +12,20 @@ import os
 import time
 
 # Specify the parameters you want 
-max_epochs = 10
+max_epochs = 30
 granularity = 2
 runs = 5
 
 # True for loading pretrain and compute accuracy over a random test dataset, else it retrain the best hyperparameters
 load_pretrain = False
-best_hyper_Oonet = [1,2,False,[0.2, 0.8]]
-best_hyper_Lugianet = [1]
+best_hyper_Oonet = None #[1,2,False,[0.2, 0.8]]
+best_hyper_Lugianet = None #[1]
 
 #True if we want to retrain our model for multiple hyperameter
-find_hyperparameters = False
+find_hyperparameters = True
 #oO_Net hyperparameter : [embedded dimension of naive net,Use Resnet,[weight_loss]]
 valid_Oo_args = [[1,4,True,[0.2, 0.8]]]
-valid_Lugia_args = [[1]]
+valid_Lugia_args = [[1],[2],[3],[4],[5]]
 
 # Let the code do the rest Do not change anything in the rest of the code
 
@@ -41,11 +41,13 @@ if find_hyperparameters:
     head_lugia = "---------- Lugia hyperparameters set ----------"
     head_Oo = "---------- Oo hyperparameters set ----------"
     print(head_lugia)
-    for hyper in valid_Lugia_args:
-        print(hyper)
+    if valid_Lugia_args is not None:
+        for hyper in valid_Lugia_args:
+            print(hyper)
     print(head_Oo)
-    for hyper in valid_Oo_args:
-        print(hyper)
+    if valid_Oo_args is not None:
+        for hyper in valid_Oo_args:
+            print(hyper)
     print("-"*len(head_lugia))
 print("Final test with the best architectures : ",(best_hyper_Oonet is not None and best_hyper_Lugianet is not None) or load_pretrain==True)
 print("Number of runs : ",runs)
