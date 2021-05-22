@@ -106,23 +106,35 @@ def train_model(model, train_input, train_target, train_classes,
 def std_accuracy(data_path,archi_names=None,save_data=None):
     """
     Goal:
+    Given the results on the test set, it will compute the mean accuracy
+    over the different runs and also the standard deviation
     Inputs:
+    data_path = string - path to the data containing the results on the test set
+    archi_names = list of string - name of the architectures
+    svae_data = string - name for the file where the quantities computed will be stored
     Outputs:
     """
+    # Lines to be displayed
     columns = ["Architecture","Mean test","Std test","Mean train","Std train"]
-    row_format = '{:<20}{:<15}{:<15}{:<15}{:<15}'
+    subheader = ["-"*len(head) for head in columns]
+    row_format = '{:<30}{:<15}{:<15}{:<15}{:<15}'
+    # Extract the data
     data = np.genfromtxt(data_path,delimiter=",",skip_header=1).astype(float)
     max_epochs = np.max(data[:,-1])
     data = data[data[:,-1] == max_epochs]
+    # Get the unique architectures
     unique_archi = np.unique(data[:,1])
     new_data = np.zeros((unique_archi.shape[0],5))
     new_data[:,0] = unique_archi
     print(row_format.format(*columns))
+    print(row_format.format(*subheader))
     "data_architectures/metrics" + save_data + ".csv"
     for i,archi in enumerate(unique_archi):
         data_archi = data[data[:,1] == archi]
+        # Metrics on test set
         new_data[i,1] = np.mean(data_archi[data_archi[:,-2] == 2,2])
         new_data[i,2] = np.std(data_archi[data_archi[:,-2] == 2,2])
+        # Metrics on train set
         new_data[i,3] = np.mean(data_archi[data_archi[:,-2] == 0,2])
         new_data[i,4] = np.std(data_archi[data_archi[:,-2] == 0,2])
         if archi_names is not None:
@@ -135,6 +147,7 @@ def std_accuracy(data_path,archi_names=None,save_data=None):
                        round(new_data[i,3],2),
                        round(new_data[i,4],2)]
         print(row_format.format(*row_display))
+    # Save the data 
     if save_data is not None:
         name_file = "data_architectures/metrics" + save_data + ".csv"
         np.savetxt(name_file,new_data,delimiter=",",header = ",".join(columns))
@@ -156,6 +169,8 @@ class Cross_validation():
         runs = int - number of times to retrain a new model
         load = int - number of samples you are loading (only 1000 will be used for train and test at each run)
         epochs = int - number of epochs for the training
+        pandas_flag = specify if pandas and seaborn are installed. If yes, one can plot the graphs, otherwise
+                      you will only be able to save the datas in csv files. 
         Outputs:
         """
         self.architectures = architectures # Get the list of architectures
@@ -511,6 +526,8 @@ class Cross_validation():
                on the testing data
         Outputs:
         """
+        if not self.pandas_flag:
+            return "Pandas or seaborn is not installed, please install them to be able to plot graphs"
         # Set the style
         sns.set_style("darkgrid")
         # Add a subplot in the figure
@@ -555,6 +572,8 @@ class Cross_validation():
                                               2 if you want to plot the test curves
         Outputs:
         """
+        if not self.pandas_flag:
+            return "Pandas or seaborn is not installed, please install them to be able to plot graphs"
         # Set the style
         sns.set_style("darkgrid")
         # Define the title to be displayed
@@ -586,6 +605,8 @@ class Cross_validation():
         subplot = list of size 3 - location of the boxplot in the figure
         """
         # Set the style
+        if not self.pandas_flag:
+            return "Pandas or seaborn is not installed, please install them to be able to plot graphs"
         sns.set_style("darkgrid")
         ax = figure.add_subplot(*subplot) # Define the ax
         mean_data_time  = self.datatime.groupby(["architecture"]).mean()
@@ -610,6 +631,8 @@ class Cross_validation():
                on the testing data
         Outputs:
         """
+        if not self.pandas_flag:
+            return "Pandas or seaborn is not installed, please install them to be able to plot graphs"
         type_perf = test*2 + (not test)*1
         # Create the figure
         fig = plt.figure(figsize=[25,14])

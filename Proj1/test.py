@@ -4,10 +4,8 @@ try:
     import pandas
     import seaborn
     pandas_flag = True
-    print("Pandas and seaborn are installed graphs will be plotted")
 except ModuleNotFoundError:
     pandas_flag = False
-    print("Pandas or seaborn is not installed, to plot the graphs please install these librairies")
 import matplotlib.pyplot as plt
 import torch
 import os
@@ -21,10 +19,10 @@ runs = 5
 # True for loading pretrain and compute accuracy over a random test dataset, else it retrain the best hyperparameters
 load_pretrain = False
 best_hyper_Oonet = [1,2,False,[0.2, 0.8]]
-best_hyper_Lugianet = [3]
+best_hyper_Lugianet = [1]
 
 #True if we want to retrain our model for multiple hyperameter
-find_hyperparameters = True
+find_hyperparameters = False
 #oO_Net hyperparameter : [embedded dimension of naive net,Use Resnet,[weight_loss]]
 valid_Oo_args = [[1,4,True,[0.2, 0.8]]]
 valid_Lugia_args = [[1]]
@@ -73,7 +71,7 @@ if find_hyperparameters:
                                             valid_Lugia_args,
                                             epochs=max_epochs,
                                             steps=granularity,runs=runs,pandas_flag=pandas_flag)
-        validation_Lugia.run_all(save_data="validation_Lugia",test=False)
+        validation_Lugia.run_all(save_data="_validation_Lugia",test=False)
 
         if pandas_flag:
             fig = plt.figure(figsize=[14,7])
@@ -89,7 +87,7 @@ if find_hyperparameters:
                                             valid_Oo_args,
                                             epochs=max_epochs,
                                             steps=granularity,runs=runs,pandas_flag=pandas_flag)
-        validation_Oo.run_all(save_data="validation_Oo",test=False)
+        validation_Oo.run_all(save_data="_validation_Oo",test=False)
 
         if pandas_flag:
             fig = plt.figure(figsize=[14,7])
@@ -115,10 +113,11 @@ if (best_hyper_Oonet is not None and best_hyper_Lugianet is not None) or load_pr
         Test_algo.run_all(test=True,save_data="_final_test")
 
         if pandas_flag:
-            
-            fig_test = plt.figure(figsize=[14,7])
-            Test_algo.plot_evolution_all(fig_test,[1,2,1],type_perf=2)
-            Test_algo.plot_std(fig_test,[1,2,2],test=True)
+
+            fig_test = plt.figure(figsize=[20,8])
+            Test_algo.plot_evolution_all(fig_test,[1,5,(1,3)],type_perf=2)
+            Test_algo.plot_std(fig_test,[1,5,(4,5)],test=True)
+            plt.subplots_adjust(wspace=0.5)
             fig_test.savefig("figures/test_set_final.svg")
 
             print("\n################### The final results are available in the figures folder ###################\n")
@@ -126,7 +125,7 @@ if (best_hyper_Oonet is not None and best_hyper_Lugianet is not None) or load_pr
         print("\n################### Sum up of the results obtained ###################\n")
 
         std_accuracy("data_architectures/accuracy_final_test.csv",archi_names=Test_algo.archi_names,
-                     save_data="_final_metrics")
+                     save_data="_final")
 
         print("\n################### The data acquired during the experiment is available data_architectures/folder ###################\n")
 
