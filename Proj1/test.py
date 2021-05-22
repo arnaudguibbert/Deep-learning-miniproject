@@ -24,12 +24,36 @@ best_hyper_Oonet = [1,2,False,[0.2, 0.8]]
 best_hyper_Lugianet = [3]
 
 #True if we want to retrain our model for multiple hyperameter
-find_hyperparameters = False
+find_hyperparameters = True
 #oO_Net hyperparameter : [embedded dimension of naive net,Use Resnet,[weight_loss]]
 valid_Oo_args = [[1,4,True,[0.2, 0.8]]]
-valid_Lugia_args = [[3]]
+valid_Lugia_args = [[1]]
 
-# Let the code do the rest
+# Let the code do the rest Do not change anything in the rest of the code
+
+print("################### PARAMETERS ################### \n")
+
+if not pandas_flag:
+    print("Graph plot : False (pandas or seaborn not installed, please install these librairies to generate the accuracy evolution graph, only the data will be saved)")
+else:
+    print("Graph plot : ",True)
+print("Use pretained models : ",load_pretrain)
+print("Hyperparameter search : ",find_hyperparameters)
+if find_hyperparameters:
+    head_lugia = "---------- Lugia hyperparameters set ----------"
+    head_Oo = "---------- Oo hyperparameters set ----------"
+    print(head_lugia)
+    for hyper in valid_Lugia_args:
+        print(hyper)
+    print(head_Oo)
+    for hyper in valid_Oo_args:
+        print(hyper)
+    print("-"*len(head_lugia))
+print("Final test with the best architectures : ",(best_hyper_Oonet is not None and best_hyper_Lugianet is not None) or load_pretrain==True)
+print("Number of runs : ",runs)
+print("Epochs : ",max_epochs)
+print("\nThese parameters can be easily modified in the header of the test.py file \n")
+
 directories = ["figures","data_architectures"]
 
 # Create directories if necessary 
@@ -41,7 +65,7 @@ if find_hyperparameters:
     # Validation of hyperparameters for LugiaNet
     if valid_Lugia_args is not None:
 
-        print("Launch Lugia hyperparameter research \n")
+        print("\n################### Launch Lugia hyperparameter search ###################\n")
         # Valid architectures
         valid_Lugia_architectures = [LugiaNet]*len(valid_Lugia_args)
         # Initialize the cross validation to determine the hyperparameters
@@ -58,7 +82,7 @@ if find_hyperparameters:
 
     if valid_Oo_args is not None:
         # Validation of hyperparameters for Oonet
-        print("Launch Oo hyperparameter research \n")
+        print("\n################### Launch Oo hyperparameter search ###################\n")
         valid_Oo_architectures = [oO_Net]*len(valid_Oo_args)
         # Initialize the cross validation to determine the hyperparameters
         validation_Oo = Cross_validation(valid_Oo_architectures,
@@ -75,34 +99,41 @@ if find_hyperparameters:
 
 # Evaluate the performances on the test set
 if (best_hyper_Oonet is not None and best_hyper_Lugianet is not None) or load_pretrain==True:
-    if load_pretrain ==False :
+    if not load_pretrain :
+
+        print("\n################### Launch assessment of the best architectures on the final test set ###################\n")
         # Architectures to test on the test set 
-        final_architectures = [oO_Net,BigNaive]
+        final_architectures = [oO_Net,LugiaNet,BigNaive]
         # List of the best hyperparameters found so far
-        final_args = [best_hyper_Oonet,[]]
+        final_args = [best_hyper_Oonet,best_hyper_Lugianet,[]]
         # Initialize the cross validation to determine the hyperparameters of some architectures
         Test_algo = Cross_validation(final_architectures,
-                                    final_args,
-                                    epochs=max_epochs,
-                                    steps=granularity,runs=runs,pandas_flag=pandas_flag)
+                                     final_args,
+                                     epochs=max_epochs,
+                                     steps=granularity,runs=runs,pandas_flag=pandas_flag)
 
         Test_algo.run_all(test=True,save_data="_final_test")
 
         if pandas_flag:
+            
             fig_test = plt.figure(figsize=[14,7])
             Test_algo.plot_evolution_all(fig_test,[1,2,1],type_perf=2)
             Test_algo.plot_std(fig_test,[1,2,2],test=True)
             fig_test.savefig("figures/test_set_final.svg")
 
-        print("The final results are available in the figures folder")
+            print("\n################### The final results are available in the figures folder ###################\n")
 
-        std_accuracy("data_architectures/accuracy_final_test.csv",
+        print("\n################### Sum up of the results obtained ###################\n")
+
+        std_accuracy("data_architectures/accuracy_final_test.csv",archi_names=Test_algo.archi_names,
                      save_data="_final_metrics")
 
-        print("The data acquired during the experiment is available data_architectures/folder")
+        print("\n################### The data acquired during the experiment is available data_architectures/folder ###################\n")
 
 
     else :
+
+        print("\n################### Use pertrain models ###################\n")
         #Declaration of the model
         pretrained_oO_Net=oO_Net()
         pretrained_Lugia=LugiaNet(3)

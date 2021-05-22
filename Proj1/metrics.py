@@ -103,13 +103,13 @@ def train_model(model, train_input, train_target, train_classes,
             loss.backward() # Perform a backward step
             optimizer.step() # Update the weights
 
-def std_accuracy(data_path,save_data=None):
+def std_accuracy(data_path,archi_names=None,save_data=None):
     """
     Goal:
     Inputs:
     Outputs:
     """
-    columns = ["Architecture index","Mean test","Std test","Mean train","Std train"]
+    columns = ["Architecture","Mean test","Std test","Mean train","Std train"]
     row_format = '{:<20}{:<15}{:<15}{:<15}{:<15}'
     data = np.genfromtxt(data_path,delimiter=",",skip_header=1).astype(float)
     max_epochs = np.max(data[:,-1])
@@ -125,7 +125,11 @@ def std_accuracy(data_path,save_data=None):
         new_data[i,2] = np.std(data_archi[data_archi[:,-2] == 2,2])
         new_data[i,3] = np.mean(data_archi[data_archi[:,-2] == 0,2])
         new_data[i,4] = np.std(data_archi[data_archi[:,-2] == 0,2])
-        row_display = [int(archi),
+        if archi_names is not None:
+            archi_name_index = archi_names[int(archi)]
+        else:
+            archi_name_index = int(archi)
+        row_display = [archi_name_index,
                        round(new_data[i,1],2),
                        round(new_data[i,2],2),
                        round(new_data[i,3],2),
