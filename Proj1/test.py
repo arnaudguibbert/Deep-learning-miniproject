@@ -23,8 +23,8 @@ best_hyper_Lugianet = None #[1]
 
 #True if we want to retrain our model for multiple hyperameter
 find_hyperparameters = True
-#oO_Net hyperparameter : [embedded dimension of naive net,Use Resnet,[weight_loss]]
-valid_Oo_args = [[1,4,True,[0.2, 0.8]]]
+oO_Net hyperparameter : [embedded_dim, use_MnistResNet, [weights_loss]]
+valid_Oo_args = [[1,4,False,[0.2, 0.8]]]
 valid_Lugia_args = [[1],[2],[3],[4],[5]]
 
 # Let the code do the rest Do not change anything in the rest of the code
@@ -38,8 +38,9 @@ else:
 print("Use pretained models : ",load_pretrain)
 print("Hyperparameter search : ",find_hyperparameters)
 if find_hyperparameters:
-    head_lugia = "---------- Lugia hyperparameters set ----------"
-    head_Oo = "---------- Oo hyperparameters set ----------"
+    head_lugia = [[1,2,3,4]]
+    weights_list = [[1,0],[0.9,0.1],[0.8,0.2],[0.7,0.3],[0.5,0.5],[0.3,0.7],[0.05,0.95]]
+    head_Oo = [[2,4,8,16],[True,False],weights_list]
     print(head_lugia)
     if valid_Lugia_args is not None:
         for hyper in valid_Lugia_args:
