@@ -369,20 +369,21 @@ class oO_Net(nn.Module):
 
 class ResNextBlock(nn.Module):
 
-    def __init__(self,n_parrallel=6):
+    def __init__(self,n_parrallel=4):
         super().__init__()
-        self.blocks = []
-        for i in range(n_parrallel):
+        self.blocks = ["block" + str(i) for i in range(n_parrallel)]
+        for block in self.blocks:
             sequence = nn.Sequential(
                 nn.Conv2d(2,2,kernel_size=(3,3),padding=(1,1)),
                 nn.BatchNorm2d(2),
-                nn.ReLU(),
+                nn.ReLU()
             )
-            self.blocks.append(sequence)
+            setattr(self,block,sequence)
 
     def forward(self,input):
-        outputs = [block(input) for block in self.blocks]
-        output = input + sum(outputs)
+        output = input
+        for block in self.blocks:
+            output += getattr(self,block)(input)
         return output
 
 
@@ -432,10 +433,6 @@ class LugiaNet(nn.Module):
             return output_FC_naive, mnist_output_resblock, mnist_output_original
         else:
             return output_FC_naive
-
-        
-
-
 
 
 
