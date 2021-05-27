@@ -383,7 +383,7 @@ class ResNextBlock(nn.Module):
     def forward(self,input):
         output = input
         for block in self.blocks:
-            output += getattr(self,block)(input)
+            output = output+getattr(self,block)(input)
         return output
 
 

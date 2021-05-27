@@ -137,6 +137,7 @@ class Linear(FrameworkModule):
         inputs = self.inputs.pop()
         # Compute the gradient with respect to the input
         if self.bias:
+            #The bias are stored in the last layer of self.weights
             grdwrtinput = grdwrtoutput@(self.weights[:,:-1])
         else:
             grdwrtinput = grdwrtoutput@self.weights 

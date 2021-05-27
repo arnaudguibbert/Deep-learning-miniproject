@@ -12,20 +12,20 @@ import os
 import time
 
 # Specify the parameters you want 
-max_epochs = 100
+max_epochs = 30
 granularity = 2
-runs = 15
+runs = 5
 
 # True for loading pretrain and compute accuracy over a random test dataset, else it retrain the best hyperparameters
-load_pretrain = True
-best_hyper_Oonet = [1,2,False,[0.2, 0.8]]
-best_hyper_Lugianet = [1]
+load_pretrain = False
+best_hyper_Oonet = None#[]
+best_hyper_Lugianet = None#[]
 
 #True if we want to retrain our model for multiple hyperameter
-find_hyperparameters = False
+find_hyperparameters = True
 #oO_Net hyperparameter : [nb_resblock, embedded_dim, use_MnistResNet, [weights_loss]]
-valid_Oo_args = [[1,4,False,[0.2, 0.8]]]
-valid_Lugia_args = None#[[1],[2],[3],[4]]
+valid_Oo_args = None#[[1,4,False,[0.2, 0.8]]]
+valid_Lugia_args = [[0],[1],[2],[3],[4],[5],[6]]
 
 # Let the code do the rest Do not change anything in the rest of the code
 
@@ -137,13 +137,13 @@ if (best_hyper_Oonet is not None and best_hyper_Lugianet is not None) or load_pr
 
         print("\n################### Use pertrain models ###################\n")
         #Declaration of the model
-        pretrained_oO_Net=oO_Net(1,2,False,[0.2, 0.8])
-        pretrained_Lugia=LugiaNet(1)
+        pretrained_oO_Net=oO_Net()
+        pretrained_Lugia=LugiaNet()
         pretrained_BigNaive=BigNaive()
 
         #loading of the bias ad weight
-        pretrained_oO_Net.load_state_dict(torch.load('model/oO_Net (1,2,False,[0.2, 0.8])_weights.pth'))
-        pretrained_Lugia.load_state_dict(torch.load('model/LugiaNet (1)_weights.pth'))
+        pretrained_oO_Net.load_state_dict(torch.load('model/oO_Net_weights.pth'))
+        pretrained_Lugia.load_state_dict(torch.load('model/LugiaNet_weights.pth'))
         pretrained_BigNaive.load_state_dict(torch.load('model/BigNaive_weights.pth'))
 
         pretrained_oO_Net.eval()
