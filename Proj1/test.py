@@ -12,17 +12,17 @@ import os
 import time
 
 # Specify the parameters you want 
-max_epochs = 30
+max_epochs = 100
 granularity = 2
 runs = 5
 
-# True for loading pretrain and compute accuracy over a random test dataset, else it retrain the best hyperparameters
+# True for loading pretrain and compute accuracy over a random test dataset, else it retrain the best hyperparameters and save weights
 load_pretrain = False
-best_hyper_Oonet = None#[]
-best_hyper_Lugianet = None#[]
+best_hyper_Oonet = []       #None
+best_hyper_Lugianet = []    #None
 
 #True if we want to retrain our model for multiple hyperameter
-find_hyperparameters = True
+find_hyperparameters = False
 #oO_Net hyperparameter : [nb_resblock, embedded_dim, use_MnistResNet, [weights_loss]]
 valid_Oo_args = None#[[1,4,False,[0.2, 0.8]]]
 valid_Lugia_args = [[0],[1],[2],[3],[4],[5],[6]]

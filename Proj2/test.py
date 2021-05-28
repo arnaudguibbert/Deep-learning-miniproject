@@ -15,7 +15,7 @@ contour = True # Contour prediction of the model
 # Specify the parameters
 run = 2
 #epochs to train the model
-epochs = 10
+epochs = 50
 #Epochs for ploting evolution of the results
 epochs_contour = 100
 granularity = 1

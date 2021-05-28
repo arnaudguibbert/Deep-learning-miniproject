@@ -142,7 +142,7 @@ def assess_model(model_gen,epochs,
         np_data = np.concatenate((np_data,row_train,row_test),axis=0)
         for epoch in range(0,epochs,granularity):
             # Train succesively the model
-            train_model(model,train_inputs,train_targets)
+            train_model(model,train_inputs,train_targets,epochs=epoch)
             accu_train = compute_nb_errors(model,train_inputs, train_targets)
             accu_test = compute_nb_errors(model,test_inputs, test_targets)
             row_train = np.array([run,accu_train,epoch,0]).reshape(1,-1)

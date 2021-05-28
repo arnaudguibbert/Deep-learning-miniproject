@@ -295,7 +295,7 @@ class oO_Net(nn.Module):
     Information is shared between both arms by concatenation or summation
     """
     
-    def __init__(self, Nb_ResBlocks=1,embedded_dim=4,use_MnistResNet=False,weights_loss=[0.5,0.5]):
+    def __init__(self, Nb_ResBlocks=1,embedded_dim=2,use_MnistResNet=False,weights_loss=[0.2,0.8]):
         super().__init__()
         self.target_type = ["target0","target1"]
         self.weights_loss = weights_loss
